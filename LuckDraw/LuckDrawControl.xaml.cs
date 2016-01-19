@@ -31,7 +31,8 @@ namespace LuckDraw
         public LuckDrawControl()
         {
             InitializeComponent();
-            m_gameService = new GameServiceClient("j;lajdf;jaiuefjf", "wx37e46819d148d5fb", "19", "9");
+            m_gameService = new GameServiceClient("youkey", "wx37e46819d148d5fb", "19", "9");
+
             LoadQrcode();
         }
 
