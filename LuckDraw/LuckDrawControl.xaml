@@ -1,0 +1,26 @@
+﻿<UserControl x:Class="LuckDraw.LuckDrawControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:LuckDraw"
+             mc:Ignorable="d" 
+             d:DesignHeight="720" d:DesignWidth="1280">
+    <Canvas>
+        <Image Width="1280" Height="720" Source="Images/签到墙的.png" d:IsHidden="True" />
+        <Image Width="1280" Height="720" Source="Images/background.png" />
+        <local:NetworkStatusIndicator Foreground="White" FontSize="50"/>
+        <Image Width="695" Height="48" Source="Images/title.png" Canvas.Left="322.239" Canvas.Top="62.655" />
+        <Image x:Name="qrcodeImge" Source="Images/qrcode.png" Width="152" Height="151" Canvas.Left="57.287" Canvas.Top="291.805" />
+        <TextBlock FontFamily="/LuckDraw;component/Fonts/#RTWS YueGothic Demo Light" Foreground="White" FontSize="18" Canvas.Left="1126.039" Canvas.Top="72.585">
+            <Run Text="总人数"/>
+            <Run Text="   "/>
+            <Run x:Name="usersCountText" Text="18" />
+            <Run Text="人" />
+        </TextBlock>
+        <Border Canvas.Left="254.438" Canvas.Top="153.953" BorderThickness="20" BorderBrush="#30FFFFFF">
+            <local:QrcodeWallControl x:Name="wall"  Width="955" Height="460">
+            </local:QrcodeWallControl>
+        </Border>
+    </Canvas>
+</UserControl>
