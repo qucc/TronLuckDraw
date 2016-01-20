@@ -12,6 +12,10 @@
         <local:NetworkStatusIndicator Foreground="White" FontSize="50"/>
         <Image Width="695" Height="48" Source="Images/title.png" Canvas.Left="322.239" Canvas.Top="62.655" />
         <Image x:Name="qrcodeImge" Source="Images/qrcode.png" Width="152" Height="151" Canvas.Left="57.287" Canvas.Top="291.805" />
+        <Image x:Name="awardImage" Width="100" Height="100" />
+        <TextBlock x:Name="awardText"  Width="100" Height="100" />
+        <Image x:Name="winnerImage" Width="200" Height="200" />
+        <TextBlock x:Name="winnerName" Width="200" Height="200" />
         <TextBlock FontFamily="/LuckDraw;component/Fonts/#RTWS YueGothic Demo Light" Foreground="White" FontSize="18" Canvas.Left="1126.039" Canvas.Top="72.585">
             <Run Text="总人数"/>
             <Run Text="   "/>

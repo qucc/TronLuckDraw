@@ -32,6 +32,18 @@ namespace LuckDraw
             base.OnKeyDown(e);
             if(e.Key == Key.D1)
             {
+                luck.ShowAward();
+            }
+            else if(e.Key == Key.D2)
+            {
+
+            }
+            else if(e.Key == Key.D3)
+            {
+
+            }
+            else if(e.Key == Key.A)
+            {
                 if (i >= 6) return;
                 var appRoot = AppDomain.CurrentDomain.BaseDirectory;
                 var usrHeadDir = appRoot + "userhead";
@@ -39,10 +51,13 @@ namespace LuckDraw
                 var pngs = Directory.GetFiles(usrHeadDir).Where(f => f.EndsWith(".jpg") || f.EndsWith(".png")).ToArray();
                 luck.ScanCheckIn(pngs[i]);
                 i++;
-                
-                
+            }
+            else if(e.Key == Key.B)
+            {
+                luck.Begin();
             }
         }
+
     }
 
     
