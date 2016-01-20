@@ -52,7 +52,7 @@ namespace LuckDraw
                 luck.ScanCheckIn(pngs[i]);
                 i++;
             }
-            else if(e.Key == Key.B)
+            else if(e.Key == Key.Enter)
             {
                 luck.Begin();
             }

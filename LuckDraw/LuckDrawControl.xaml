@@ -11,15 +11,22 @@
         <Image Width="1280" Height="720" Source="Images/background.png" />
         <local:NetworkStatusIndicator Foreground="White" FontSize="50"/>
         <Image Width="695" Height="48" Source="Images/title.png" Canvas.Left="322.239" Canvas.Top="62.655" />
-        <Image x:Name="qrcodeImge" Source="Images/qrcode.png" Width="152" Height="151" Canvas.Left="57.287" Canvas.Top="291.805" />
-        <Image x:Name="awardImage" Width="100" Height="100" />
-        <TextBlock x:Name="awardText"  Width="100" Height="100" />
-        <Image x:Name="winnerImage" Width="200" Height="200" />
-        <TextBlock x:Name="winnerName" Width="200" Height="200" />
+        <Canvas x:Name="qrcodePanel" Canvas.Left="37.787" Canvas.Top="275.305" Height="235.5" Width="192.151" d:IsHidden="True">
+            <Image Source="Images/qrcodeframe.png" Width="187" Height="230" d:IsLocked="True"/>
+            <Image x:Name="qrcodeImge" Source="Images/qrcode.png" Width="152" Height="151" Canvas.Top="15" Canvas.Left="19.5"  />
+        </Canvas>
+        <Canvas x:Name="awardPanel" Height="154" Width="192.151" Canvas.Left="37.787" Canvas.Top="153.953">
+            <Image x:Name="awardImage" Width="130" Height="127" Canvas.Left="27" />
+            <TextBlock x:Name="awardText"  Width="130" Height="27" Canvas.Left="27" Canvas.Top="127"  Foreground="White" TextAlignment="Center" FontSize="20" />
+        </Canvas>
+        <Canvas x:Name="winnerPanel" Height="154" Width="192.151" Canvas.Left="29.938" Canvas.Top="361.5">
+            <Image x:Name="winnerImage" Width="130" Height="127" Canvas.Left="31.5" />
+            <TextBlock x:Name="winnerName" Width="130" Height="27" Canvas.Left="27" Canvas.Top="127" Foreground="White" TextAlignment="Center" FontSize="20" />
+        </Canvas>
         <TextBlock FontFamily="/LuckDraw;component/Fonts/#RTWS YueGothic Demo Light" Foreground="White" FontSize="18" Canvas.Left="1126.039" Canvas.Top="72.585">
             <Run Text="总人数"/>
             <Run Text="   "/>
-            <Run x:Name="usersCountText" Text="18" />
+            <Run x:Name="usersCountText" Text="0" />
             <Run Text="人" />
         </TextBlock>
         <Border Canvas.Left="254.438" Canvas.Top="153.953" BorderThickness="20" BorderBrush="#30FFFFFF">
