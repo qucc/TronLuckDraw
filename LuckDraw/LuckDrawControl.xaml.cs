@@ -1,4 +1,5 @@
-﻿using SensngGame.ClientSDK;
+﻿using Newtonsoft.Json;
+using SensngGame.ClientSDK;
 using SensngGame.ClientSDK.Contract;
 using System;
 using System.Collections.Generic;
@@ -29,10 +30,13 @@ namespace LuckDraw
         private static readonly log4net.ILog log = log4net.LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
         private GameServiceClient m_gameService;
         private int m_lastUserCount = 0;
+        private bool m_longPulling = false;
+
         private List<UserActionData> m_scanUsers = null;
-        
+        private List<UserActionData> m_winners = new List<UserActionData>();
         private List<AwardData> m_awards = null;
         private Dictionary<int, WhiteListItem> m_whiteList = null;
+        
         private AppState m_currentState = AppState.ScanQrcode;
         private AwardData m_currentAward = null;
         private DispatcherTimer m_timer = new DispatcherTimer();
@@ -42,26 +46,37 @@ namespace LuckDraw
         public LuckDrawControl()
         {
             InitializeComponent();
-            m_gameService = new GameServiceClient("j;lajdf;jaiuefjf", "wx37e46819d148d5fb", "19", "9");
+            m_gameService = new GameServiceClient("j;lajdf;jaiuefjf", "wx37e46819d148d5fb", "19", "10");
             m_timer.Interval = TimeSpan.FromMilliseconds(100);
             m_timer.Tick += Tick;
-            //LoadQrcode();
-             LoadAwardList();
-             LoadWhiteList();
+            LoadQrcode();
+            LoadAwardList();
+            LoadWhiteList();
+            LoadWinner();
+           
         }
 
-        public void ShowAward()
+        public void ShowAward(int awardLevel)
         {
+            if (m_currentState == AppState.ShowAward)
+                return;
+
             if(m_awards.Count() == 0)
             {
-                MessageBox.Show("奖品已抽完");
+                MessageBox.Show("所有奖品已抽完");
                 return;
             }
-
-            m_currentAward = m_awards.FirstOrDefault();
-            m_currentAward.ActualQty--;
-            if (m_currentAward.ActualQty == 0)
-                m_awards.Remove(m_currentAward);
+            m_currentAward = m_awards.Where(a => a.AwardSeq == awardLevel).FirstOrDefault();
+            if(m_currentAward == null)
+            {
+                MessageBox.Show("该奖项不存在");
+                return;
+            }
+            if(m_currentAward.PlanQty <=0 || m_currentAward.PlanQty - m_currentAward.ActualQty <=0 )
+            {
+                MessageBox.Show("该奖品已抽完");
+                return;
+            }
             
             awardImage.Source = new BitmapImage(new Uri(m_currentAward.AwardImagePath));
             awardText.Text = m_currentAward.Name;
@@ -75,26 +90,44 @@ namespace LuckDraw
                 m_timer.Start();
                 GoToState(AppState.Gaming);
             }
+            else if(m_currentState == AppState.ShowWinner)
+            {
+                if(m_currentAward.PlanQty > 0)
+                {
+                    m_timer.Start();
+                    GoToState(AppState.Gaming);
+                }
+                else
+                {
+                    MessageBox.Show("该奖项已抽完");
+                }
+            }
             else if (m_currentState == AppState.Gaming)
             {
                 m_timer.Stop();
-                UserInfoData winner = null;
-                if(m_whiteList != null && m_whiteList.ContainsKey(m_currentAward.Id))
+                UserActionData winner = null;
+                var candidateIds = m_scanUsers.Select(u => u.Id).Except(m_winners.Select(u => u.Id));
+
+                if(candidateIds.Count() == 0)
                 {
-                    var whiteUsersIds = m_whiteList[m_currentAward.Id].Users;
-                    var candidateIds = whiteUsersIds.Intersect(m_scanUsers.Select(u => u.Id));
-                    if(candidateIds.Count() > 0)
+                    MessageBox.Show("所有用户抽过了");
+                    return;
+                }
+
+                if (m_whiteList != null && m_whiteList.ContainsKey(m_currentAward.AwardSeq))
+                {
+                    var whiteUsersIds = m_whiteList[m_currentAward.AwardSeq].Users;
+                    var candidateIdsWhite = candidateIds.Intersect(whiteUsersIds);
+                    if(candidateIdsWhite.Count() > 0)
                     {
-                        var winnerId = m_rnd.Next(candidateIds.Count());
-                        winner = m_scanUsers.First(u => u.Id == winnerId);
+                        winner = m_scanUsers.First(u => u.Id == candidateIdsWhite.RandomGet());
                     }
                 }
                 if(winner == null)
                 {
-                    int  winnerIndex = m_rnd.Next(m_scanUsers.Count());
-                    winner = m_scanUsers[winnerIndex];
+                    winner = m_scanUsers.First(u => u.Id == candidateIds.RandomGet());
                 }
-                SetWinnerImage(winner);
+                SetWinner(winner, m_currentAward);
                 GoToState(AppState.ShowWinner);
             }
         }
@@ -108,10 +141,65 @@ namespace LuckDraw
             m_tickIndex++;
         }
 
+        private void SetWinner(UserActionData winner, AwardData award)
+        {
+            m_currentAward.PlanQty--;
+            m_winners.Add(winner);
+            SetWinnerImage(winner);
+            Task.Factory.StartNew(() => {
+               var userAwardResult = m_gameService.WinAwardByUser(award.Id.ToString(), winner.Id.ToString()).Result;
+                if (userAwardResult.Data == null)
+                {
+                    Console.WriteLine("WinAwardByUser " + userAwardResult.ErrMessage);
+                }
+                else
+                {
+                    Console.WriteLine("WinAwardByUser" + userAwardResult.Data.Nickname + "win " + userAwardResult.Data.AwardID);
+                }
+            });
+        }
+
         private void SetWinnerImage(UserInfoData winner)
         {
             winnerImage.Source = new BitmapImage(new Uri(winner.Headimgurl, UriKind.Absolute));
             winnerName.Text = winner.Nickname;
+        }
+
+        private void LoadWinner()
+        {
+            var fetchWinnerTask = Task.Factory.StartNew<List<UserAwardData>>(() =>
+            {
+                UserAwardsResult userAwardsResult;
+                int tryCount = 0;
+                while (tryCount < 5)
+                {
+                    userAwardsResult = m_gameService.GetWinAwardUsersByActivityId().Result;
+                    tryCount++;
+                    if (userAwardsResult == null)
+                        continue;
+                    if (userAwardsResult.Data == null)
+                    {
+                        log.Error("GetWinAwardUsersByActivityId" + userAwardsResult.ErrMessage);
+                        continue;
+                    }
+                    return userAwardsResult.Data;
+                }
+                return null;
+            });
+
+            fetchWinnerTask.ContinueWith((t) =>
+            {
+                List<UserAwardData> awardDataList = t.Result;
+                if (awardDataList == null)
+                {
+                    return;
+                }
+               
+                foreach (var winner in awardDataList)
+                {
+                    m_winners.Add(new UserActionData { Id = winner.Id});
+                }
+            }, TaskScheduler.FromCurrentSynchronizationContext());
         }
 
         private void LoadWhiteList()
@@ -145,10 +233,13 @@ namespace LuckDraw
                 m_whiteList = new Dictionary<int, WhiteListItem>();
                 foreach(var u in whiteList)
                 {
-                    var awardIds = u.AwardSeqs.Split(new char[] { ','});
-                    foreach(var awardId in awardIds)
+                    if (u.AwardSeqs == null || u.AwardSeqs == "")
+                        continue;
+
+                    var awardLevels = u.AwardSeqs.Split(new char[] { ','});
+                    foreach(var awardLevel in awardLevels)
                     {
-                        int id = int.Parse(awardId);
+                        int id = int.Parse(awardLevel);
                         if (!m_whiteList.ContainsKey(id))
                         {
                             m_whiteList.Add(id, new WhiteListItem());
@@ -223,6 +314,15 @@ namespace LuckDraw
             //获取签到二维码
             var fetchQrcodeTask = Task.Factory.StartNew<QrCodeData>(() =>
             {
+                CheckInQrcode q = ReadFromDisk();
+                if(q != null)
+                {
+                    return new QrCodeData
+                    {
+                        QrCodeId = q.Id,
+                        QrCodeUrl = q.FileName
+                    };
+                }
                 int tryCount = 0;
                 QrCodeResult qrCodeResult;
                 while (tryCount < 5)
@@ -236,6 +336,12 @@ namespace LuckDraw
                         log.Error("GetQrCode4LoginAsync " + qrCodeResult.ErrMessage + " " + qrCodeResult.Status);
                         continue;
                     }
+                    var filename = "qrcode.jpg";
+                    bool success = DownloadImage(qrCodeResult.Data.QrCodeUrl, AppDomain.CurrentDomain.BaseDirectory + filename);
+                    if (!success)
+                        continue;
+                    qrCodeResult.Data.QrCodeUrl = filename;
+                    SaveQrcode(new CheckInQrcode { FileName = filename, Id = qrCodeResult.Data.QrCodeId });
                     return qrCodeResult.Data;
                     
                 }
@@ -247,8 +353,10 @@ namespace LuckDraw
             {
                 QrCodeData qrcodeData = t.Result;
                 if (qrcodeData == null)
-                    MessageBox.Show("获取二维码失败");
-                qrcodeImge.Source = new BitmapImage(new Uri(qrcodeData.QrCodeUrl));
+                {
+                    //MessageBox.Show("获取二维码失败");
+                }
+                qrcodeImge.Source = new BitmapImage(new Uri(AppDomain.CurrentDomain.BaseDirectory + qrcodeData.QrCodeUrl, UriKind.Absolute));
             }, TaskScheduler.FromCurrentSynchronizationContext());
 
             //询轮扫人用户
@@ -256,8 +364,11 @@ namespace LuckDraw
             {
                 QrCodeData qrcodeData = t.Result;
                 if (qrcodeData == null)
-                    MessageBox.Show("获取二维码失败");
-                while(true)
+                {
+                  ///  MessageBox.Show("获取二维码失败");
+                }
+                m_longPulling = true;
+                while(m_longPulling)
                 {
                     Thread.Sleep(1000);
                     var userActionResult = m_gameService.FindScanQrCodeUsersAsync(qrcodeData.QrCodeId).Result;
@@ -296,13 +407,14 @@ namespace LuckDraw
                             catch (Exception) { }
                         }
 
-                        m_lastUserCount = scanUsers.Count();
+                        m_lastUserCount = scanUsers.Where(s => s.IsSigned).Count();
                         Dispatcher.BeginInvoke((Action)(() => 
                         {
                             wall.ClearTiles();
-                            usersCountText.Text = m_lastUserCount.ToString();
-                            m_scanUsers = scanUsers;
-                            foreach (var usr in scanUsers)
+                            m_scanUsers = scanUsers.Where(s => s.IsSigned).ToList();
+                            usersCountText.Text = m_scanUsers.Count.ToString();
+
+                            foreach (var usr in m_scanUsers)
                             {
                                 wall.AddTile(usr.Id, usr.Headimgurl);
                             }
@@ -334,7 +446,8 @@ namespace LuckDraw
                 m_scanUsers = new List<UserActionData>();
             m_scanUsers.Add(new UserActionData {
                 Headimgurl = url,
-                Nickname = "Name " + url.GetHashCode()
+                Nickname = "Name " + url.GetHashCode(),
+                Id = url.GetHashCode()
             });
             usersCountText.Text = m_scanUsers.Count.ToString();
         }      
@@ -345,6 +458,35 @@ namespace LuckDraw
             awardPanel.Visibility = state != AppState.ScanQrcode ? Visibility.Visible : Visibility.Hidden;
             winnerPanel.Visibility = state == AppState.ShowWinner || state == AppState.Gaming ? Visibility.Visible : Visibility.Hidden;
             m_currentState = state;
+            if(m_currentState != AppState.ScanQrcode)
+            {
+                m_longPulling = false;
+            }
+        }
+
+        private void SaveQrcode(CheckInQrcode q)
+        {
+            var appRoot = AppDomain.CurrentDomain.BaseDirectory;
+            try
+            {
+               File.WriteAllText(appRoot + "qrcode.json" ,JsonConvert.SerializeObject(q));
+            }
+            catch (Exception) { }
+        }
+
+        private CheckInQrcode ReadFromDisk()
+        {
+            var appRoot = AppDomain.CurrentDomain.BaseDirectory;
+            try {
+
+                CheckInQrcode q = JsonConvert.DeserializeObject<CheckInQrcode>(File.ReadAllText(appRoot + "qrcode.json"));
+                if(File.Exists(appRoot + q.FileName))
+                {
+                    return q;
+                }
+             }
+            catch (Exception) { }
+            return null;
         }
     }
 
@@ -363,6 +505,24 @@ namespace LuckDraw
             Users = new List<int>();
         }
         public List<int> Users { get; set; }
+    }
+
+    class CheckInQrcode
+    {
+        public string Id { get; set; }
+        public string FileName { get; set; }
+    }
+
+    public static class ListExtension
+    {
+        public static T RandomGet<T>(this IEnumerable<T> list)
+        {
+            if (list.Count() == 0)
+                return default(T);
+            Random rnd = new Random();
+            return list.ElementAt(rnd.Next(list.Count()));
+        }
+
     }
 
 }
