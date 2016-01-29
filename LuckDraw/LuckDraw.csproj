@@ -71,6 +71,7 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="Controls\BulletCurtain.cs" />
     <Compile Include="QrcodeTile.cs" />
     <Page Include="LuckDrawControl.xaml">
       <SubType>Designer</SubType>

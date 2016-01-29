@@ -33,5 +33,6 @@
             <local:QrcodeWallControl x:Name="wall"  Width="955" Height="460">
             </local:QrcodeWallControl>
         </Border>
+        <local:BulletCurtain x:Name="bulletCurtain" />
     </Canvas>
 </UserControl>

@@ -42,19 +42,20 @@ namespace LuckDraw
         private DispatcherTimer m_timer = new DispatcherTimer();
         private Random m_rnd = new Random();
 
-
         public LuckDrawControl()
         {
             InitializeComponent();
             m_gameService = new GameServiceClient("j;lajdf;jaiuefjf", "wx37e46819d148d5fb", "19", "10");
             m_timer.Interval = TimeSpan.FromMilliseconds(100);
             m_timer.Tick += Tick;
+           
             LoadQrcode();
             LoadAwardList();
             LoadWhiteList();
             LoadWinner();
-           
+          
         }
+
 
         public void ShowAward(int awardLevel)
         {

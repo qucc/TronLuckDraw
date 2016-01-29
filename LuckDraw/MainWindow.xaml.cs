@@ -38,6 +38,10 @@ namespace LuckDraw
             {
                 luck.Begin();
             }
+            else if(e.Key == Key.F1)
+            {
+                luck.bulletCurtain.Toggle();
+            }
         }
 
     }
