@@ -24,9 +24,9 @@ namespace LuckDraw
         public MainWindow()
         {
             InitializeComponent();
+            log4net.Config.XmlConfigurator.Configure();
         }
 
-        int i = 0;
         protected override void OnKeyDown(KeyEventArgs e)
         {
             base.OnKeyDown(e);

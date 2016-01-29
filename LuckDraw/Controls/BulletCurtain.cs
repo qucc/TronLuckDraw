@@ -1,4 +1,5 @@
-﻿using System;
+﻿using SensngGame.ClientSDK;
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Globalization;
@@ -20,13 +21,28 @@ namespace LuckDraw
         private Rect m_curtainRect;
         private DispatcherTimer m_bulletTimer = new DispatcherTimer();
         private List<Bullet> m_bullets = new List<Bullet>();
-        private object lockobject = new object();
+        private int m_lastBulletId = -1;
         private bool m_running = true;
-        private Brush[] m_brushes = new Brush[] { Brushes.White, Brushes.White, Brushes.White, Brushes.Green, Brushes.Pink,Brushes.Yellow};
+        private Brush[] m_brushes = new Brush[] {Brushes.LightSeaGreen, Brushes.Pink,Brushes.Yellow};
 
+        private GameServiceClient m_gameServiceClient;
         public BulletCurtain()
         {
             InitBulletCurtain();
+            CompositionTarget.Rendering += CompositionTarget_Rendering;
+        }
+
+        private void CompositionTarget_Rendering(object sender, EventArgs e)
+        {
+            if (m_running)
+            {
+                bulletTimer_Tick(null, null);
+            }
+        }
+
+        public void SetGameServiceClient(GameServiceClient client)
+        {
+            m_gameServiceClient = client;
             Start();
         }
 
@@ -38,9 +54,9 @@ namespace LuckDraw
             m_curtainRect = new Rect(0, 0, 1280, 720);
             m_bulletCurtain.ClipGeometry = new RectangleGeometry(m_curtainRect);
 
-            m_bulletTimer.Interval = TimeSpan.FromMilliseconds(100);
-            m_bulletTimer.Tick += bulletTimer_Tick;
-            m_bulletTimer.Start();
+            //m_bulletTimer.Interval = TimeSpan.FromMilliseconds(100);
+            //m_bulletTimer.Tick += bulletTimer_Tick;
+            //m_bulletTimer.Start();
         }
 
 
@@ -56,25 +72,26 @@ namespace LuckDraw
             {
                 while (m_running)
                 {
-                    for (int i = 0; i < 1; i++)
+
+                    var chatMessageResult = m_gameServiceClient.GetChartMessage(5).Result;
+                    if(chatMessageResult.Data != null)
                     {
-                        var list = new List<Bullet>();
-                        for (int j = 0; j < 1; j++)
+                        List<Bullet> bullets = new List<Bullet>();
+                        foreach(var chat in chatMessageResult.Data)
                         {
-                            list.Add(new Bullet
+                            bullets.Add(new Bullet
                             {
-                                Id = id,
-                                Text = "文本" + rnd.Next(10000, 90000).ToString(),
-                                X = -300,
+                                Id = chat.Id,
+                                Text = chat.Message,
+                                X = (int)m_curtainRect.Width + rnd.Next(50,100),
                                 Y = rnd.Next(10, 600),
-                                Speed = rnd.Next(10, 20),
+                                Speed = rnd.Next(2, 5),
                                 BrushIndex = rnd.Next(m_brushes.Length)
                             });
-                            id += 1;
                         }
-                        Dispatcher.BeginInvoke(new NewBulletDelegate(NewBullets), list);
-
+                        Dispatcher.BeginInvoke(new NewBulletDelegate(NewBullets), bullets);
                     }
+
 #if DEBUG
                     Console.WriteLine("Loading Bullets...");
 #endif
@@ -87,7 +104,15 @@ namespace LuckDraw
         private void NewBullets(List<Bullet> bullets)
         {
             var newBullest = bullets.Except(m_bullets, new BulletComparer());
-            m_bullets.AddRange(newBullest);
+            if(m_lastBulletId != -1)
+            {
+                newBullest = newBullest.Where(b => b.Id > m_lastBulletId);
+            }
+            if (newBullest.Count() > 0)
+            {
+                m_bullets.AddRange(newBullest.OrderBy(b => b.Id));
+                m_lastBulletId = Math.Max(m_lastBulletId, m_bullets.Max(b => b.Id));
+            }
 
         }
 
@@ -126,8 +151,8 @@ namespace LuckDraw
             for (int i = 0; i < m_bullets.Count; i++)
             {
                 var bullet = m_bullets[i];
-                bullet.X += bullet.Speed;
-                if (bullet.X > m_curtainRect.Width)
+                bullet.X -= bullet.Speed;
+                if (bullet.X < -100)
                 {
                     m_bullets.RemoveAt(i);
                 }
@@ -138,12 +163,18 @@ namespace LuckDraw
                 dc.DrawRectangle(Brushes.Transparent, null, m_curtainRect);
                 foreach (var bullet in m_bullets)
                 {
-                    dc.DrawText(new FormattedText(bullet.Text,
-                                    CultureInfo.CurrentCulture,
-                                    FlowDirection.LeftToRight,
-                                    new Typeface("Arial"), 30,
-                                    m_brushes[bullet.BrushIndex]),
-                                    new Point(bullet.X, bullet.Y));
+                    var formattedText= new FormattedText(bullet.Text,
+                                        CultureInfo.CurrentCulture,
+                                        FlowDirection.LeftToRight,
+                                        new Typeface("Arial"), 30,
+                                        Brushes.White);
+                    var margin = 10;
+                    dc.PushOpacity(0.6);
+                    dc.DrawRoundedRectangle(m_brushes[bullet.BrushIndex], null, new Rect(bullet.X - margin, bullet.Y - margin, formattedText.Width + 2 * margin, formattedText.Height + 2 * margin), 10, 10);
+                    dc.Pop();
+                    dc.DrawText(formattedText, new Point(bullet.X, bullet.Y));
+               
+                    
                 }
             }
 
@@ -169,7 +200,7 @@ namespace LuckDraw
 
             public int GetHashCode(Bullet obj)
             {
-                return obj.GetHashCode();
+                return obj.Id;
             }
         }
     }

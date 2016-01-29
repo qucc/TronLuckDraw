@@ -12,16 +12,17 @@
         <local:NetworkStatusIndicator Foreground="White" FontSize="50"/>
         <Image Width="695" Height="48" Source="Images/title.png" Canvas.Left="322.239" Canvas.Top="62.655" />
         <Canvas x:Name="qrcodePanel" Canvas.Left="37.787" Canvas.Top="275.305" Height="235.5" Width="192.151" d:IsHidden="True">
-            <Image Source="Images/qrcodeframe.png" Width="187" Height="230" d:IsLocked="True"/>
+            <Image Source="Images/qrcodeframe.png" Width="187" Height="230" d:IsLocked="True" Panel.ZIndex="10"/>
             <Image x:Name="qrcodeImge" Source="Images/qrcode.png" Width="152" Height="151" Canvas.Top="15" Canvas.Left="19.5"  />
         </Canvas>
         <Canvas x:Name="awardPanel" Height="154" Width="192.151" Canvas.Left="37.787" Canvas.Top="153.953">
             <Image x:Name="awardImage" Width="130" Height="127" Canvas.Left="27" />
-            <TextBlock x:Name="awardText"  Width="130" Height="27" Canvas.Left="27" Canvas.Top="127"  Foreground="White" TextAlignment="Center" FontSize="20" />
+            <TextBlock x:Name="awardText"  Width="130" Height="27" Canvas.Left="27" Canvas.Top="127"  Foreground="White" TextAlignment="Center" FontSize="25" FontWeight="Bold" />
+            <TextBlock x:Name="awardNameText" Width="130" Height="27" Canvas.Left="27" Canvas.Top="159"  Foreground="White" TextAlignment="Center" FontSize="18" />
         </Canvas>
         <Canvas x:Name="winnerPanel" Height="154" Width="192.151" Canvas.Left="29.938" Canvas.Top="361.5">
             <Image x:Name="winnerImage" Width="130" Height="127" Canvas.Left="31.5" />
-            <TextBlock x:Name="winnerName" Width="130" Height="27" Canvas.Left="27" Canvas.Top="127" Foreground="White" TextAlignment="Center" FontSize="20" />
+            <TextBlock x:Name="winnerName" Width="200" Height="27" Canvas.Left="-4" Canvas.Top="127" Foreground="White" TextAlignment="Center" FontSize="20" />
         </Canvas>
         <TextBlock FontFamily="/LuckDraw;component/Fonts/#RTWS YueGothic Demo Light" Foreground="White" FontSize="18" Canvas.Left="1126.039" Canvas.Top="72.585">
             <Run Text="总人数"/>
