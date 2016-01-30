@@ -108,7 +108,7 @@ namespace LuckDraw
             {
                 newBullest = newBullest.Where(b => b.Id > m_lastBulletId);
             }
-            if (newBullest.Count() > 0)
+            if (newBullest.Count() > 0 && m_brushes.Length < 25)
             {
                 m_bullets.AddRange(newBullest.OrderBy(b => b.Id));
                 m_lastBulletId = Math.Max(m_lastBulletId, m_bullets.Max(b => b.Id));

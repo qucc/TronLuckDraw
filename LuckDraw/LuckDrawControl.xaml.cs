@@ -52,9 +52,45 @@ namespace LuckDraw
             bulletCurtain.SetGameServiceClient(m_gameService);
             LoadQrcode();
             LoadAwardList();
+            LoadActivityInfo();
     
         }
 
+        private void LoadActivityInfo()
+        {
+           var fetchActivityTask = Task.Factory.StartNew<ActivityData>(() => 
+            {
+                int tryCount = 0;
+                while (tryCount < 3)
+                {
+                    var activityResult = m_gameService.GetActivityInfo().Result;
+                    if (activityResult.Data != null)
+                        return activityResult.Data;
+                    else
+                        log.Error(activityResult.ErrMessage);
+                }
+                return null;
+            });
+
+            fetchActivityTask.ContinueWith((t) =>
+            {
+                ActivityData activityData = t.Result;
+                if(activityData == null)
+                {
+                    MessageBox.Show("获取不到活动信息");
+                    return;
+                }
+                if(DateTime.Today < activityData.OpenDate)
+                {
+                    MessageBox.Show("活动未开始");
+                }
+                if(DateTime.Today > activityData.EndDate)
+                {
+                    MessageBox.Show("活动已结束");
+                }
+                titleTxt.Text = activityData.Name + "微信签到墙";
+            }, TaskScheduler.FromCurrentSynchronizationContext());
+        }
 
         public void ShowAward(int awardLevel)
         {
@@ -81,6 +117,7 @@ namespace LuckDraw
                 awardImage.Source = new BitmapImage(new Uri(m_currentAward.AwardImagePath));
             awardText.Text = m_currentAward.Name;
             awardNameText.Text = m_currentAward.AwardProduct;
+            awardCountText.Text = m_currentAward.ActualQty + "/" + m_currentAward.PlanQty;
             GoToState(AppState.ShowAward);
         }
 
@@ -94,7 +131,7 @@ namespace LuckDraw
             }
             else if(m_currentState == AppState.ShowWinner)
             {
-                if(m_currentAward.PlanQty > 0)
+                if(m_currentAward.PlanQty > m_currentAward.ActualQty )
                 {
                     LoadCanWinUsers();
                     m_timer.Start();
@@ -142,7 +179,8 @@ namespace LuckDraw
 
         private void SetWinner(UserActionData winner, AwardData award)
         {
-            m_currentAward.PlanQty--;
+            m_currentAward.ActualQty++;
+            awardCountText.Text = m_currentAward.ActualQty + "/" + m_currentAward.PlanQty;
             SetWinnerImage(winner);
             Task.Factory.StartNew(() => {
                var userAwardResult = m_gameService.WinAwardByUser(award.Id.ToString(), winner.Id.ToString()).Result;
@@ -336,7 +374,7 @@ namespace LuckDraw
                         {
                             wall.ClearTiles();
                             m_scanUsers = scanUsers.Where(s => s.IsSigned).ToList();
-                            usersCountText.Text = m_scanUsers.Count.ToString();
+                            usersCountText.Text = m_scanUsers.Count.ToString() + "/" + scanUsers.Count();
 
                             foreach (var usr in m_scanUsers)
                             {
