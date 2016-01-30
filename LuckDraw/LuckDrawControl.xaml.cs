@@ -284,7 +284,7 @@ namespace LuckDraw
                 while(m_longPulling)
                 {
                     Thread.Sleep(1000);
-                    var userActionResult = m_gameService.FindScanQrCodeUsersAsync(qrcodeData.QrCodeId).Result;
+                    var userActionResult = m_gameService.GetUsersByActivityAndGame(1000).Result;
                     if (userActionResult == null)
                         continue;
 #if DEBUG
@@ -305,6 +305,11 @@ namespace LuckDraw
                         if (!Directory.Exists(headDir)) Directory.CreateDirectory(headDir);
                         foreach (var u in scanUsers)
                         {
+                            if (string.IsNullOrEmpty(u.Headimgurl))
+                            {
+                                u.Headimgurl = appRoot + "nohead.png";
+                                continue;
+                            }
                             var targetPath = headDir + u.Headimgurl.GetHashCode() + ".jpg";
                             if (File.Exists(targetPath))
                             {
