@@ -32,7 +32,8 @@ namespace LuckDraw
         public void AddTile(int userId, string qrcodeUrl)
         {
             BitmapImage bitmap = new BitmapImage(new Uri(qrcodeUrl, UriKind.Absolute));
-            m_tiles.Add(new QrcodeTile { UserId = userId, HeadImage = bitmap});
+            m_tiles.Add(new QrcodeTile { UserId = userId, HeadImage = bitmap });
+
             InvalidateVisual();
         }
 
@@ -49,8 +50,9 @@ namespace LuckDraw
 
             List<int> unuse = Enumerable.Range(0, m_tileIndexs.Count()).ToList();
             int countPerTile = m_tileIndexs.Length / m_tiles.Count();
+            countPerTile = Math.Max(1, countPerTile);
             Random rnd = new Random();
-            for (var i = 0; i < m_tiles.Count(); i++)
+            for (var i = 0; i < Math.Min(50, m_tiles.Count()); i++)
             {
                 for (var j = 0; j < countPerTile; j++)
                 {
@@ -64,6 +66,7 @@ namespace LuckDraw
             foreach (var tileIndex in m_tileIndexs)
             {
                 dc.DrawImage(m_tiles[tileIndex].HeadImage, new Rect(startX, startY, tileWidth, tileHeight));
+                
                 startX = startX + tileWidth + Margin;
                 if (startX >= this.Width)
                 {
