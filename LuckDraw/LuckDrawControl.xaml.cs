@@ -77,7 +77,8 @@ namespace LuckDraw
                 return;
             }
             
-            awardImage.Source = new BitmapImage(new Uri(m_currentAward.AwardImagePath));
+            if(string.IsNullOrEmpty(m_currentAward.AwardImagePath))
+                awardImage.Source = new BitmapImage(new Uri(m_currentAward.AwardImagePath));
             awardText.Text = m_currentAward.Name;
             awardNameText.Text = m_currentAward.AwardProduct;
             GoToState(AppState.ShowAward);
