@@ -46,7 +46,7 @@ namespace LuckDraw
         public LuckDrawControl()
         {
             InitializeComponent();
-            m_gameService = new GameServiceClient("j;lajdf;jaiuefjf", "wx37e46819d148d5fb", "19", Activity_ID);
+            m_gameService = new GameServiceClient("yourkey", "wx37e46819d148d5fb", "19", Activity_ID);
             m_timer.Interval = TimeSpan.FromMilliseconds(100);
             m_timer.Tick += Tick;
             bulletCurtain.SetGameServiceClient(m_gameService);
