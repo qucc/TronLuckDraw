@@ -369,7 +369,7 @@ namespace LuckDraw
                             }
                         }
 
-                        m_lastUserCount = scanUsers.Where(s => s.IsSigned).Count();
+                        m_lastUserCount = scanUsers.Count;
                         Dispatcher.BeginInvoke((Action)(() => 
                         {
                             wall.ClearTiles();

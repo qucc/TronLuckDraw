@@ -42,6 +42,10 @@ namespace LuckDraw
             {
                 luck.bulletCurtain.Toggle();
             }
+            else if(e.Key == Key.R)
+            {
+                luck.wall.Roll();
+            }
         }
 
     }

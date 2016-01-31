@@ -43,7 +43,7 @@ namespace LuckDraw
         public void SetGameServiceClient(GameServiceClient client)
         {
             m_gameServiceClient = client;
-            Start();
+            //Start();
         }
 
         private void InitBulletCurtain()
