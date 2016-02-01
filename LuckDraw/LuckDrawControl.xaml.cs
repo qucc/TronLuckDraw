@@ -365,11 +365,11 @@ namespace LuckDraw
                         {
                             wall.ClearTiles();
                             m_scanUsers = scanUsers.Where(s => s.IsSigned).ToList();
-                            usersCountText.Text = m_scanUsers.Count.ToString() + "/" + scanUsers.Count();
+                            usersCountText.Text = m_scanUsers.Count.ToString();
 
                             foreach (var usr in m_scanUsers)
                             {
-                                wall.AddTile(usr.Id, usr.Headimgurl);
+                                wall.AddQrcode(usr.Id, usr.Headimgurl);
                             }
                         }));
                     }
@@ -428,7 +428,7 @@ namespace LuckDraw
 
         public void ScanCheckIn(string url)
         {
-            wall.AddTile(1,url);
+            wall.AddQrcode(1,url);
             if (m_scanUsers == null)
                 m_scanUsers = new List<UserActionData>();
             m_scanUsers.Add(new UserActionData {

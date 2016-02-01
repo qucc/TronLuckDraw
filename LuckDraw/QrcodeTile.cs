@@ -7,7 +7,7 @@ using System.Windows.Media.Imaging;
 
 namespace LuckDraw
 {
-    public class QrcodeTile
+    public class Qrcode
     {
         public BitmapImage HeadImage { get; set; }
         public int UserId { get; set; }
