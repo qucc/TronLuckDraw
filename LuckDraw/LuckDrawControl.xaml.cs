@@ -42,11 +42,12 @@ namespace LuckDraw
         private DispatcherTimer m_timer = new DispatcherTimer();
         private Random m_rnd = new Random();
         private readonly string Activity_ID = ConfigurationManager.AppSettings["ActivityId"].ToString();
+        private readonly string Weixin_ID = ConfigurationManager.AppSettings["WeixinId"].ToString();
 
         public LuckDrawControl()
         {
             InitializeComponent();
-            m_gameService = new GameServiceClient("j;lajdf;jaiuefjf", "wx37e46819d148d5fb", "19", Activity_ID);
+            m_gameService = new GameServiceClient("j;lajdf;jaiuefjf", Weixin_ID, "19", Activity_ID);
             m_timer.Interval = TimeSpan.FromMilliseconds(100);
             m_timer.Tick += Tick;
             bulletCurtain.SetGameServiceClient(m_gameService);
@@ -113,7 +114,7 @@ namespace LuckDraw
                 return;
             }
             
-            if(string.IsNullOrEmpty(m_currentAward.AwardImagePath))
+            if(!string.IsNullOrEmpty(m_currentAward.AwardImagePath))
                 awardImage.Source = new BitmapImage(new Uri(m_currentAward.AwardImagePath));
             awardText.Text = m_currentAward.Name;
             awardNameText.Text = m_currentAward.AwardProduct;
@@ -264,16 +265,6 @@ namespace LuckDraw
             //获取签到二维码
             var fetchQrcodeTask = Task.Factory.StartNew<QrCodeData>(() =>
             {
-                CheckInQrcode q = ReadFromDisk();
-                if(q != null)
-                {
-                    return new QrCodeData
-                    {
-                        QrCodeId = q.QrcodeId,
-                        QrCodeUrl = q.FileName
-                      
-                    };
-                }
                 int tryCount = 0;
                 QrCodeResult qrCodeResult;
                 while (tryCount < 5)
