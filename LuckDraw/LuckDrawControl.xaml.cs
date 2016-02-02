@@ -38,7 +38,7 @@ namespace LuckDraw
         
         private AppState m_currentState = AppState.ScanQrcode;
         private AwardData m_currentAward = null;
-        private List<int> m_candidateIds = new List<int>();
+        private List<int> m_candidateIds = null;
         private DispatcherTimer m_timer = new DispatcherTimer();
         private Random m_rnd = new Random();
         private readonly string Activity_ID = ConfigurationManager.AppSettings["ActivityId"].ToString();
@@ -115,7 +115,7 @@ namespace LuckDraw
             }
             
             if(!string.IsNullOrEmpty(m_currentAward.AwardImagePath))
-                awardImage.Source = new BitmapImage(new Uri(m_currentAward.AwardImagePath));
+            awardImage.Source = new BitmapImage(new Uri(m_currentAward.AwardImagePath));
             awardText.Text = m_currentAward.Name;
             awardNameText.Text = m_currentAward.AwardProduct;
             awardCountText.Text = m_currentAward.ActualQty + "/" + m_currentAward.PlanQty;
@@ -126,13 +126,19 @@ namespace LuckDraw
         {
             if(m_currentState == AppState.ShowAward)
             {
-                m_timer.Start();
                 LoadCanWinUsers();
+                 m_timer.Start();
+
                 GoToState(AppState.Gaming);
             }
             else if(m_currentState == AppState.ShowWinner)
             {
-                if(m_currentAward.PlanQty > m_currentAward.ActualQty )
+                if (m_currentAward == null)
+                {
+                    MessageBox.Show("该奖品已抽完");
+                    return;
+                }
+                if( m_currentAward.PlanQty > 0)
                 {
                     LoadCanWinUsers();
                     m_timer.Start();
@@ -140,14 +146,11 @@ namespace LuckDraw
                 }
                 else
                 {
-                    MessageBox.Show("该奖项已抽完");
+                    ShowAward(m_currentAward.AwardSeq);
                 }
             }
             else if (m_currentState == AppState.Gaming)
             {
-                m_timer.Stop();
-               
-               
                 if(m_candidateIds == null)
                 {
                     MessageBox.Show("debug get GetCanWinUsers 未返回");
@@ -162,8 +165,11 @@ namespace LuckDraw
 
                 //todo:scanuser less than candidates
                 UserActionData winner = m_scanUsers.FirstOrDefault(u => u.Id == m_candidateIds.RandomGet());
-                if (winner == null)
+                if (winner == null) { 
                     return;
+                }
+                m_timer.Stop();
+
                 SetWinner(winner, m_currentAward);
                 GoToState(AppState.ShowWinner);
             }
@@ -199,6 +205,7 @@ namespace LuckDraw
         private void SetWinnerImage(UserInfoData winner)
         {
             winnerImage.Source = new BitmapImage(new Uri(winner.Headimgurl, UriKind.Absolute));
+            
             winnerName.Text = winner.Nickname;
         }
 
@@ -380,6 +387,7 @@ namespace LuckDraw
 
         private void LoadCanWinUsers()
         {
+            m_candidateIds = null;
            var fetchCandicateTask = Task.Factory.StartNew<List<UserAwardData>>(() => 
            {
                int tryCount = 0;
@@ -397,8 +405,7 @@ namespace LuckDraw
                 List<UserAwardData> candicates = t.Result;
                 if(candicates != null)
                 {
-                    m_candidateIds.Clear();
-                    m_candidateIds.AddRange(candicates.Select(c => c.Id));
+                    m_candidateIds = candicates.Select(c => c.Id).ToList();
                 }
                 else
                 {
