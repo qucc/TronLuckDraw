@@ -54,7 +54,38 @@ namespace LuckDraw
             LoadQrcode();
             LoadAwardList();
             LoadActivityInfo();
+            LoadWhiteListInfo();
     
+        }
+
+        private void LoadWhiteListInfo()
+        {
+           var fetchWhiteListTask = Task.Factory.StartNew<List<WhiteUserData>>(() => 
+            {
+                int tryCount = 0;
+                while (tryCount < 3)
+                {
+                    var whitelistResult = m_gameService.GetActivityWhiteListUsers().Result;
+                    if(whitelistResult.Data != null)
+                    {
+                        return whitelistResult.Data;
+                    }
+                    tryCount++;
+                }
+                return null;
+            });
+
+            fetchWhiteListTask.ContinueWith((t) => 
+            {
+                List<WhiteUserData> list = t.Result;
+                if(list ==  null)
+                {
+                    MessageBox.Show("加载白名单失败");
+                    return;
+                }
+                totalCountText.Text = list.Count.ToString();
+
+            }, TaskScheduler.FromCurrentSynchronizationContext());
         }
 
         private void LoadActivityInfo()
@@ -138,7 +169,7 @@ namespace LuckDraw
                     MessageBox.Show("该奖品已抽完");
                     return;
                 }
-                if( m_currentAward.PlanQty > 0)
+                if( m_currentAward.PlanQty > m_currentAward.ActualQty)
                 {
                     LoadCanWinUsers();
                     m_timer.Start();
@@ -165,7 +196,8 @@ namespace LuckDraw
 
                 //todo:scanuser less than candidates
                 UserActionData winner = m_scanUsers.FirstOrDefault(u => u.Id == m_candidateIds.RandomGet());
-                if (winner == null) { 
+                if (winner == null) {
+                    MessageBox.Show("设置返回人数为空");
                     return;
                 }
                 m_timer.Stop();
@@ -286,7 +318,6 @@ namespace LuckDraw
                         continue;
                     }
                     var filename = "qrcode.jpg";
-                    Console.WriteLine();
                     bool success = DownloadImage(qrCodeResult.Data.QrCodeUrl, AppDomain.CurrentDomain.BaseDirectory + filename);
                     if (!success)
                         continue;
@@ -336,6 +367,7 @@ namespace LuckDraw
 
                     if (scanUsers.Count() != m_lastUserCount)
                     {
+                        m_lastUserCount = scanUsers.Count;
                         WebClient webClient = new WebClient();
                         var appRoot = AppDomain.CurrentDomain.BaseDirectory;
                         var headDir = appRoot + "head/";
@@ -367,12 +399,12 @@ namespace LuckDraw
                             }
                         }
 
-                        m_lastUserCount = scanUsers.Where(s => s.IsSigned).Count();
+                      
                         Dispatcher.BeginInvoke((Action)(() => 
                         {
                             wall.ClearTiles();
                             m_scanUsers = scanUsers.Where(s => s.IsSigned).ToList();
-                            usersCountText.Text = m_scanUsers.Count.ToString() + "/" + scanUsers.Count();
+                            usersCountText.Text = m_scanUsers.Count.ToString();
 
                             foreach (var usr in m_scanUsers)
                             {

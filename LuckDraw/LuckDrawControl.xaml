@@ -43,6 +43,8 @@
             <Run Text="总人数"/>
             <Run Text="   "/>
             <Run x:Name="usersCountText" Text="0" />
+            <Run Text="/"/>
+            <Run x:Name="totalCountText" Text="0"/>
             <Run Text="人" />
         </TextBlock>
         <Border Canvas.Left="254.438" Canvas.Top="153.953" BorderThickness="20" BorderBrush="#30FFFFFF">
