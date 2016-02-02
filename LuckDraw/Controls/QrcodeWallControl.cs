@@ -32,7 +32,9 @@ namespace LuckDraw
         private Model3DGroup m_cubicModels = null;
 
         private Tile[] m_tiles = new Tile[Row * Column];
-        private Cubic[] m_cubics = new Cubic[5];
+        private Cubic[] m_cubics = null;
+        private const int MaxCubicCount = 5;
+        private int m_cubicCount = 1;
 
 
         public QrcodeWallControl()
@@ -49,15 +51,11 @@ namespace LuckDraw
             PaintFrontWall();
             PaintBackWall();
             CompositionTarget.Rendering += CompositionTarget_Rendering;
-            
         }
 
-        bool start = false;
-        double friction = 0;
-        double speed = 6;
-        private double angle = 0;
         private DateTime lastFlipTime = DateTime.Now;
         private bool isFliping = false;
+        private bool isRotating = false;
         private void CompositionTarget_Rendering(object sender, EventArgs e)
         {
             if(!isFliping && DateTime.Now.Subtract(lastFlipTime).TotalMilliseconds > 2000)
@@ -70,29 +68,36 @@ namespace LuckDraw
                 FlipTiles();
             }
 
-            if (start)
+            if (isRotating)
             {
-                speed = speed - friction;
-                if (speed < 0)
-                {
-                    start = false;
-                }
-                angle = angle + speed;
-
                 for (int i = 0; i < m_cubics.Length; i++)
                 {
                     var cubic = m_cubics[i];
-                    cubic.Rotation3D.Angle = angle;
-                }
-                
-             
-                 PaintCubic();
-                
+                    if (cubic.Speed != 0)
+                    {
+                        cubic.Speed = cubic.Speed - cubic.Friction;
+                        if (cubic.Speed < 0)
+                        {
+                            cubic.Speed = 0;
+                            cubic.Rotation3D.Angle = 0;
+                        }
+                        cubic.Rotation3D.Angle = cubic.Rotation3D.Angle + cubic.Speed;
 
-                if (angle == 360)
-                {
-                    angle = 0;
+                        if (cubic.Rotation3D.Angle == 360)
+                        {
+                            cubic.Rotation3D.Angle = 0;
+                        }
+                    }
                 }
+                if(m_cubics.All(c =>c.Speed == Cubic.Fast))
+                {
+                    PaintCubic();
+                }
+                if(m_cubics.All(c =>c.Speed == 0))
+                {
+                    isRotating = false;
+                }
+                
             }
         }
 
@@ -229,22 +234,49 @@ namespace LuckDraw
             }
         }
 
+        public void AddCubic()
+        {
+            if (m_cubicCount == MaxCubicCount)
+                return;
+            m_cubicCount++;
+            ReloadCubic();
+        }
+
+        public void RemoveCubic()
+        {
+            if (m_cubicCount == 1)
+                return;
+            m_cubicCount--;
+            ReloadCubic();
+        }
+
+
         private void ReloadCubic()
         {
+            m_cubics = new Cubic[m_cubicCount];
             m_cubicModels.Children.Clear();
-            double offset = (m_cubics.Length * 1.5 - 0.5) / 2;
+            double offset = (m_cubics.Length * 1) / 2;
             for (int i = 0; i < m_cubics.Length; i++)
             {
                 m_cubics[i] = new Cubic
                 {
-                    Tranlsate3D = new TranslateTransform3D(i * 1.5 - offset, 0, 1),
+                    Speed = Cubic.Fast,
+                    Tranlsate3D = new TranslateTransform3D(i - offset, 0, 2),
                     Rotation3D  = new AxisAngleRotation3D(new Vector3D(1, 0, 1), 0),
                     BackMaterial = new DiffuseMaterial(),
                     BottomMaterial = new DiffuseMaterial(),
-                    FrontMaterial = new DiffuseMaterial(new SolidColorBrush(Colors.Black)),
+                    FrontMaterial = new DiffuseMaterial(),
                     LeftMaterial = new DiffuseMaterial(),
                     RightMaterial = new DiffuseMaterial(),
-                    TopMaterial = new DiffuseMaterial()
+                    TopMaterial = new DiffuseMaterial(),
+                    Nickname = new TextBlock
+                    {
+                        Text = "Hella你好",
+                        TextWrapping = TextWrapping.WrapWithOverflow,
+                        Width = 300,
+                        Foreground = Brushes.Red,
+                        FontFamily = new FontFamily("Arial")
+                    }
                 };
             }
 
@@ -321,10 +353,24 @@ namespace LuckDraw
                 tileModel.Transform = new TranslateTransform3D(offset, i % row - offset, i / row - offset);
                 cubicModel3D.Children.Add(tileModel);
             }
+            //文字
+            GeometryModel3D nickNameModel = new GeometryModel3D();
+            MeshGeometry3D nickNameMesh = new MeshGeometry3D();
+            nickNameMesh.Positions = Point3DCollection.Parse("0 0 0, 1 0 0, 1 1 0, 0 1 0");
+            nickNameMesh.TriangleIndices = Int32Collection.Parse("0 1 2, 0 2 3");
+            nickNameMesh.TextureCoordinates = PointCollection.Parse("0 1, 1 1, 1 0, 0 0");
+            nickNameModel.Geometry = nickNameMesh;
+            VisualBrush brush = new VisualBrush(cubic.Nickname);
+            brush.Stretch = Stretch.Uniform;
+            nickNameModel.Material = new DiffuseMaterial(brush);
+            nickNameModel.Transform = new TranslateTransform3D(-0.5 , -1.3, 0.6);
+            cubicModel3D.Children.Add(nickNameModel);
+
             RotateTransform3D rotate = new RotateTransform3D(cubic.Rotation3D, new Point3D(0, 0, 0));
             Transform3DGroup transGroup = new Transform3DGroup();
             transGroup.Children.Add(rotate);
             transGroup.Children.Add(cubic.Tranlsate3D);
+            
             cubicModel3D.Transform = transGroup;
             return cubicModel3D;
         }
@@ -347,15 +393,22 @@ namespace LuckDraw
         
         public void Roll()
         {
-            ReloadCubic();
-            if (!start)
+          
+            if (!isRotating)
             {
-                start = true;
-                friction = 0;
+                isRotating = true;
+                ReloadCubic();
+                foreach(var cubic in m_cubics)
+                {
+                    cubic.Start();
+                }
             }
             else
             {
-                friction = speed * speed / (360 * 2 - angle) / 2;
+                foreach(var cubic in m_cubics)
+                {
+                    cubic.Stop();
+                }
             }
         }
 

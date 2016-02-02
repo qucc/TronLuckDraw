@@ -42,6 +42,14 @@ namespace LuckDraw
             {
                 luck.bulletCurtain.Toggle();
             }
+            else if(e.Key == Key.OemPlus)
+            {
+                luck.wall.AddCubic();
+            }
+            else if(e.Key == Key.OemMinus)
+            {
+                luck.wall.RemoveCubic();
+            }
             else if(e.Key == Key.R)
             {
                 luck.wall.Roll();
