@@ -18,7 +18,6 @@ namespace LuckDraw
     {
         private const int Row = 5;
         private const int Column = 10;
-        private const int Margin = 5;
 
         private List<Qrcode> m_qrcodes = new List<Qrcode>();
         private int[] m_tileIndexs = new int[Row * Column];
@@ -238,7 +237,7 @@ namespace LuckDraw
             {
                 m_cubics[i] = new Cubic
                 {
-                    Tranlsate3D = new TranslateTransform3D(i * 1.5 - offset, 0, 0),
+                    Tranlsate3D = new TranslateTransform3D(i * 1.5 - offset, 0, 1),
                     Rotation3D  = new AxisAngleRotation3D(new Vector3D(1, 0, 1), 0),
                     BackMaterial = new DiffuseMaterial(),
                     BottomMaterial = new DiffuseMaterial(),
