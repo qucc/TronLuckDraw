@@ -363,16 +363,15 @@ namespace LuckDraw
                     {
                         continue;
                     }
-                    var scanUsers = userActionResult.Data;
+                    var gameUsers = userActionResult.Data;
 
-                    if (scanUsers.Count() != m_lastUserCount)
+                    if (gameUsers.Where(s => s.IsSigned).Count() != m_lastUserCount)
                     {
-                        m_lastUserCount = scanUsers.Count;
                         WebClient webClient = new WebClient();
                         var appRoot = AppDomain.CurrentDomain.BaseDirectory;
                         var headDir = appRoot + "head/";
                         if (!Directory.Exists(headDir)) Directory.CreateDirectory(headDir);
-                        foreach (var u in scanUsers)
+                        foreach (var u in gameUsers)
                         {
                             if (string.IsNullOrEmpty(u.Headimgurl))
                             {
@@ -399,11 +398,11 @@ namespace LuckDraw
                             }
                         }
 
-                      
+                        m_lastUserCount = gameUsers.Where(s => s.IsSigned).Count();
                         Dispatcher.BeginInvoke((Action)(() => 
                         {
                             wall.ClearTiles();
-                            m_scanUsers = scanUsers.Where(s => s.IsSigned).ToList();
+                            m_scanUsers = gameUsers.Where(s => s.IsSigned).ToList();
                             usersCountText.Text = m_scanUsers.Count.ToString();
 
                             foreach (var usr in m_scanUsers)
