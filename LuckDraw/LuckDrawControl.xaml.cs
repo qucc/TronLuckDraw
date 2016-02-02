@@ -47,13 +47,13 @@ namespace LuckDraw
         public LuckDrawControl()
         {
             InitializeComponent();
-            m_gameService = new GameServiceClient("j;lajdf;jaiuefjf", Weixin_ID, "19", Activity_ID);
-            m_timer.Interval = TimeSpan.FromMilliseconds(100);
-            m_timer.Tick += Tick;
-            bulletCurtain.SetGameServiceClient(m_gameService);
-            LoadQrcode();
-            LoadAwardList();
-            LoadActivityInfo();
+            //m_gameService = new GameServiceClient("j;lajdf;jaiuefjf", Weixin_ID, "19", Activity_ID);
+            //m_timer.Interval = TimeSpan.FromMilliseconds(100);
+            //m_timer.Tick += Tick;
+            //bulletCurtain.SetGameServiceClient(m_gameService);
+            //LoadQrcode();
+            //LoadAwardList();
+            //LoadActivityInfo();
     
         }
 

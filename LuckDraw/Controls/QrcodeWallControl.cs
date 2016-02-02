@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -30,44 +31,70 @@ namespace LuckDraw
         private MeshGeometry3D m_tileBottomMesh = null;
         private MeshGeometry3D m_tileSideMesh = null;
         private Model3DGroup m_cubicModels = null;
-        private TranslateTransform3D m_cubicTranslate3D = null;
-        private RotateTransform3D m_cubicRotate3D = null;
-        private DispatcherTimer m_timer = new DispatcherTimer();
 
         private Tile[] m_tiles = new Tile[Row * Column];
+        private Cubic[] m_cubics = new Cubic[5];
 
 
         public QrcodeWallControl()
         {
             Init3DWorld();
             InitWallTiles();
+            foreach (var f in Directory.GetFiles("head"))
+            {
+                m_qrcodes.Add(new Qrcode
+                {
+                    HeadImage = new BitmapImage(new Uri(f, UriKind.Relative))
+                });
+            }
+            PaintFrontWall();
+            PaintBackWall();
             CompositionTarget.Rendering += CompositionTarget_Rendering;
+            
         }
 
         bool start = false;
         double friction = 0;
         double speed = 6;
         private double angle = 0;
+        private DateTime lastFlipTime = DateTime.Now;
+        private bool isFliping = false;
         private void CompositionTarget_Rendering(object sender, EventArgs e)
         {
-            if (!start)
-                return;
-            speed = speed - friction;
-            if (speed < 0)
+            if(!isFliping && DateTime.Now.Subtract(lastFlipTime).TotalMilliseconds > 2000)
             {
-                start = false;
+                isFliping = true;
             }
-            angle = angle + speed;
-     
-            (m_cubicRotate3D.Rotation as AxisAngleRotation3D).Angle = angle;
 
-            if (angle == 360)
+            if(isFliping)
             {
-                angle = 0;
-
+                FlipTiles();
             }
-            if(angle % 12 == 0)
-             AddImage();
+
+            if (start)
+            {
+                speed = speed - friction;
+                if (speed < 0)
+                {
+                    start = false;
+                }
+                angle = angle + speed;
+
+                for (int i = 0; i < m_cubics.Length; i++)
+                {
+                    var cubic = m_cubics[i];
+                    cubic.Rotation3D.Angle = angle;
+                }
+                
+             
+                 PaintCubic();
+                
+
+                if (angle == 360)
+                {
+                    angle = 0;
+                }
+            }
         }
 
         private void Init3DWorld()
@@ -115,7 +142,6 @@ namespace LuckDraw
             m_tileSideMesh.TriangleIndices = Int32Collection.Parse("0 1 2, 0 2 3");
             m_tileSideMesh.TextureCoordinates = PointCollection.Parse("1 1, 1 0, 0 0, 0 1");
 
-           // ReloadCubic();
         }
         
         public void ClearTiles()
@@ -127,7 +153,7 @@ namespace LuckDraw
         {
             BitmapImage bitmap = new BitmapImage(new Uri(qrcodeUrl, UriKind.Absolute));
             m_qrcodes.Add(new Qrcode { UserId = userId, HeadImage = bitmap});
-            RepaintWall();
+
         }
 
         private void InitWallTiles()
@@ -159,18 +185,26 @@ namespace LuckDraw
             }
         }
 
-        private void RepaintWall()
+        private void PaintFrontWall()
         {
+            Random rnd = new Random();
             for (int i = 0; i < m_tiles.Length; i++)
             {
                 var tile = m_tiles[i];
-                Qrcode qrcode = null;
-                if (i < m_qrcodes.Count)
-                    qrcode = m_qrcodes[i];
-                if (qrcode != null)
-                {
-                    tile.Material.Brush = new ImageBrush(qrcode.HeadImage);
-                }
+                Qrcode qrcode = m_qrcodes[rnd.Next(50)];
+                tile.Material.Brush = new ImageBrush(qrcode.HeadImage);
+                
+            }
+        }
+
+        private void PaintBackWall()
+        {
+            Random rnd = new Random();
+            for (int i = 0; i < m_tiles.Length; i++)
+            {
+                var tile = m_tiles[i];
+                Qrcode back = m_qrcodes[rnd.Next(50)];
+                tile.BackMateral.Brush = new ImageBrush(back.HeadImage);
             }
         }
 
@@ -179,128 +213,150 @@ namespace LuckDraw
             for (int i = 0; i < m_tiles.Length; i++)
             {
                 var tile = m_tiles[i];
-                
+                tile.Rotation3D.Angle += 1;
+                if(tile.Rotation3D.Angle == 360)
+                {
+                    tile.Rotation3D.Angle = 0;
+                    isFliping = false;
+                    lastFlipTime = DateTime.Now;
+                    PaintBackWall();
+                }
+                if(tile.Rotation3D.Angle == 180)
+                {
+                    isFliping = false;
+                    lastFlipTime = DateTime.Now;
+                    PaintFrontWall();
+                }
             }
         }
 
         private void ReloadCubic()
         {
             m_cubicModels.Children.Clear();
-      
-            int row = 3;
+            double offset = (m_cubics.Length * 1.5 - 0.5) / 2;
+            for (int i = 0; i < m_cubics.Length; i++)
+            {
+                m_cubics[i] = new Cubic
+                {
+                    Tranlsate3D = new TranslateTransform3D(i * 1.5 - offset, 0, 0),
+                    Rotation3D  = new AxisAngleRotation3D(new Vector3D(1, 0, 1), 0),
+                    BackMaterial = new DiffuseMaterial(),
+                    BottomMaterial = new DiffuseMaterial(),
+                    FrontMaterial = new DiffuseMaterial(new SolidColorBrush(Colors.Black)),
+                    LeftMaterial = new DiffuseMaterial(),
+                    RightMaterial = new DiffuseMaterial(),
+                    TopMaterial = new DiffuseMaterial()
+                };
+            }
+
+            for (int i = 0; i < m_cubics.Length; i++)
+            {
+                var cubic = m_cubics[i];
+                var cubicModel3D = BuildCubic(cubic);
+                m_cubicModels.Children.Add(cubicModel3D);
+            }
+        }
+
+        private Model3DGroup BuildCubic(Cubic cubic)
+        {
+            Model3DGroup cubicModel3D = new Model3DGroup();
+            int row = 1;
             double offset = row / 2.0;
             //front
             for (int i = 0; i < row * row; i++)
             {
                 GeometryModel3D tileModel = new GeometryModel3D();
                 tileModel.Geometry = m_tileFrontMesh;
-                tileModel.Material = new DiffuseMaterial(Brushes.Tomato);
-                tileModel.BackMaterial = new DiffuseMaterial(Brushes.Tomato);
-                tileModel.Transform = new TranslateTransform3D(i% row - offset, i/ row - offset, offset);
-                m_cubicModels.Children.Add(tileModel);
+                tileModel.Material = cubic.FrontMaterial;
+                tileModel.BackMaterial = cubic.FrontMaterial;
+                tileModel.Transform = new TranslateTransform3D(i % row - offset, i / row - offset, offset);
+                cubicModel3D.Children.Add(tileModel);
             }
             //bottom
             for (int i = 0; i < row * row; i++)
             {
                 GeometryModel3D tileModel = new GeometryModel3D();
                 tileModel.Geometry = m_tileBottomMesh;
-                tileModel.Material = new DiffuseMaterial(Brushes.Brown);
-                tileModel.BackMaterial = new DiffuseMaterial(Brushes.Brown);
+                tileModel.Material = cubic.BottomMaterial;
+                tileModel.BackMaterial = cubic.BottomMaterial;
                 tileModel.Transform = new TranslateTransform3D(i % row - offset, -offset, i / row - offset);
-                m_cubicModels.Children.Add(tileModel);
+                cubicModel3D.Children.Add(tileModel);
             }
             ////left
             for (int i = 0; i < row * row; i++)
             {
                 GeometryModel3D tileModel = new GeometryModel3D();
                 tileModel.Geometry = m_tileSideMesh;
-                tileModel.Material = new DiffuseMaterial(Brushes.Red);
-                tileModel.BackMaterial = new DiffuseMaterial(Brushes.Red);
+                tileModel.Material = cubic.LeftMaterial;
+                tileModel.BackMaterial = cubic.LeftMaterial;
                 tileModel.Transform = new TranslateTransform3D(-offset, i % row - offset, i / row - offset);
-                m_cubicModels.Children.Add(tileModel);
+                cubicModel3D.Children.Add(tileModel);
             }
             //behind
             for (int i = 0; i < row * row; i++)
             {
                 GeometryModel3D tileModel = new GeometryModel3D();
                 tileModel.Geometry = m_tileFrontMesh;
-                tileModel.Material = new DiffuseMaterial(Brushes.Yellow);
-                tileModel.BackMaterial = new DiffuseMaterial(Brushes.Yellow);
+                tileModel.Material = cubic.BackMaterial;
+                tileModel.BackMaterial = cubic.BackMaterial;
                 tileModel.Transform = new TranslateTransform3D(i % row - offset, i / row - offset, -offset);
-                m_cubicModels.Children.Add(tileModel);
+                cubicModel3D.Children.Add(tileModel);
             }
             //top
             for (int i = 0; i < row * row; i++)
             {
                 GeometryModel3D tileModel = new GeometryModel3D();
                 tileModel.Geometry = m_tileBottomMesh;
-                tileModel.Material = new DiffuseMaterial(Brushes.BurlyWood);
-                tileModel.BackMaterial = new DiffuseMaterial(Brushes.BurlyWood);
+                tileModel.Material = cubic.TopMaterial;
+                tileModel.BackMaterial = cubic.TopMaterial;
                 tileModel.Transform = new TranslateTransform3D(i % row - offset, offset, i / row - offset);
-                m_cubicModels.Children.Add(tileModel);
+                cubicModel3D.Children.Add(tileModel);
             }
             //right
             for (int i = 0; i < row * row; i++)
             {
                 GeometryModel3D tileModel = new GeometryModel3D();
                 tileModel.Geometry = m_tileSideMesh;
-                tileModel.Material = new DiffuseMaterial(Brushes.Cyan);
-                tileModel.BackMaterial = new DiffuseMaterial(Brushes.Cyan);
+                tileModel.Material = cubic.RightMaterial;
+                tileModel.BackMaterial = cubic.RightMaterial;
                 tileModel.Transform = new TranslateTransform3D(offset, i % row - offset, i / row - offset);
-                m_cubicModels.Children.Add(tileModel);
+                cubicModel3D.Children.Add(tileModel);
             }
-            m_cubicRotate3D = new RotateTransform3D(new AxisAngleRotation3D(new Vector3D(1, 0, 1), 0), new Point3D(0, 0, 0));
-            m_cubicTranslate3D = new TranslateTransform3D(0,0,0);
+            RotateTransform3D rotate = new RotateTransform3D(cubic.Rotation3D, new Point3D(0, 0, 0));
             Transform3DGroup transGroup = new Transform3DGroup();
-            transGroup.Children.Add(m_cubicRotate3D);
-            transGroup.Children.Add(m_cubicTranslate3D);
-            m_cubicModels.Transform = transGroup;
+            transGroup.Children.Add(rotate);
+            transGroup.Children.Add(cubic.Tranlsate3D);
+            cubicModel3D.Transform = transGroup;
+            return cubicModel3D;
+        }
 
+        private void PaintCubic()
+        {
+            var rnd = new Random();
+            
+            for (int i = 0; i < m_cubics.Length; i++)
+            {
+                var cubic = m_cubics[i];
+                cubic.BackMaterial.Brush = new ImageBrush(m_qrcodes[rnd.Next(m_qrcodes.Count)].HeadImage);
+                cubic.BottomMaterial.Brush = new ImageBrush(m_qrcodes[rnd.Next(m_qrcodes.Count)].HeadImage);
+                cubic.FrontMaterial.Brush = new ImageBrush(m_qrcodes[rnd.Next(m_qrcodes.Count)].HeadImage);
+                cubic.LeftMaterial.Brush = new ImageBrush(m_qrcodes[rnd.Next(m_qrcodes.Count)].HeadImage);
+                cubic.RightMaterial.Brush = new ImageBrush(m_qrcodes[rnd.Next(m_qrcodes.Count)].HeadImage);
+                cubic.TopMaterial.Brush = new ImageBrush(m_qrcodes[rnd.Next(m_qrcodes.Count)].HeadImage);
+            }
         }
         
         public void Roll()
         {
-           
             ReloadCubic();
-           
-            //M_timer_Tick(null, null);     
-            //m_timer.Start();
             if (!start)
             {
                 start = true;
                 friction = 0;
-
-                var rotate = m_cubicRotate3D.Rotation as AxisAngleRotation3D;
-                rotate.Angle = angle;
-
-                if (angle == 360)
-                {
-                    angle = 0;
-
-                }
             }
             else
             {
-
                 friction = speed * speed / (360 * 2 - angle) / 2;
-            }
-
-
-
-        }
-
-        public void AddImage()
-        {
-            var rnd = new Random();
-            int i = 0;
-            foreach(var tileModel in m_cubicModels.Children)
-            {
-                var geometry3D = tileModel as GeometryModel3D;
-                geometry3D.Material = new DiffuseMaterial(new ImageBrush(m_qrcodes[rnd.Next(50)].HeadImage));
-                geometry3D.BackMaterial = new DiffuseMaterial(new ImageBrush(m_qrcodes[rnd.Next(50)].HeadImage));
-               
-
-                i++;
             }
         }
 
