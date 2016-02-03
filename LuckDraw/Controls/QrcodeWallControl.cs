@@ -25,7 +25,7 @@ namespace LuckDraw
         private PerspectiveCamera m_camera = null;
         private Model3DGroup m_world = null;
         private Model3DGroup m_tileModels = null;
-        private TranslateTransform3D m_tilesTranslate3D = null;
+        private AxisAngleRotation3D m_tilesRotate3D = null;
         private MeshGeometry3D m_tileFrontMesh = null;
         private MeshGeometry3D m_tileBottomMesh = null;
         private MeshGeometry3D m_tileSideMesh = null;
@@ -46,13 +46,6 @@ namespace LuckDraw
         {
             Init3DWorld();
             InitWallTiles();
-            //foreach (var f in Directory.GetFiles("head"))
-            //{
-            //    m_qrcodes.Add(new Qrcode
-            //    {
-            //        HeadImage = new BitmapImage(new Uri(f, UriKind.Relative))
-            //    });
-            //}
             PaintFrontWall();
             PaintBackWall();
             CompositionTarget.Rendering += CompositionTarget_Rendering;
@@ -114,8 +107,9 @@ namespace LuckDraw
             ModelVisual3D rootVisual = new ModelVisual3D();
             m_world = new Model3DGroup();
             m_tileModels = new Model3DGroup();
-            m_tilesTranslate3D = new TranslateTransform3D();
-            m_tileModels.Transform = m_tilesTranslate3D;
+            m_tilesRotate3D = new AxisAngleRotation3D(new Vector3D(0, 1, 0), 0);
+            RotateTransform3D tilesRotateTransform3D = new RotateTransform3D(m_tilesRotate3D, new Point3D(-5,0,0));
+            m_tileModels.Transform = tilesRotateTransform3D;
             m_cubicModels = new Model3DGroup();
 
             m_camera = new PerspectiveCamera();
@@ -226,6 +220,18 @@ namespace LuckDraw
             }
         }
 
+        private void ClearPaintWall()
+        {
+            for (int i = 0; i < m_tiles.Length; i++)
+            {
+                var tile = m_tiles[i];
+
+                tile.BackMateral.Brush = Brushes.Transparent;
+                tile.Material.Brush = Brushes.Transparent;
+                
+            }
+        }
+
         private void FlipTiles()
         {
             for (int i = 0; i < m_tiles.Length; i++)
@@ -248,6 +254,8 @@ namespace LuckDraw
             }
         }
 
+
+
         public void AddCubic()
         {
             if (m_cubicCount == MaxCubicCount)
@@ -262,6 +270,11 @@ namespace LuckDraw
                 return;
             m_cubicCount--;
             ReloadCubic();
+        }
+
+        public void ResetCubicCount()
+        {
+            m_cubicCount = 0;
         }
 
 
@@ -421,8 +434,8 @@ namespace LuckDraw
         {
             if(canFlip)
             {
+                ClearPaintWall();
                 canFlip = false;
-                m_tileModels.Children.Clear();
             }
             if (!isRotating)
             {
@@ -444,6 +457,17 @@ namespace LuckDraw
                     cubic.Stop();
                 }
             }
+        }
+
+        public void Reset()
+        {
+            canFlip = true;
+            PaintFrontWall();
+            PaintBackWall();
+            isRotating = false;
+            m_cubicCount = 1;
+            m_cubics = null;
+            m_cubicModels.Children.Clear();
         }
     }
 

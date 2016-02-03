@@ -40,7 +40,6 @@ namespace LuckDraw
         private AppState m_currentState = AppState.ScanQrcode;
         private AwardData m_currentAward = null;
         private List<int> m_candidateIds = null;
-        private DispatcherTimer m_timer = new DispatcherTimer();
         private Random m_rnd = new Random();
         private readonly string Activity_ID = ConfigurationManager.AppSettings["ActivityId"].ToString();
         private readonly string Weixin_ID = ConfigurationManager.AppSettings["WeixinId"].ToString();
@@ -49,8 +48,7 @@ namespace LuckDraw
         {
             InitializeComponent();
             m_gameService = new GameServiceClient("j;lajdf;jaiuefjf", Weixin_ID, "19", Activity_ID);
-            m_timer.Interval = TimeSpan.FromMilliseconds(100);
-            m_timer.Tick += Tick;
+        
             bulletCurtain.SetGameServiceClient(m_gameService);
             if (!DesignerProperties.GetIsInDesignMode(this))
             {
@@ -154,6 +152,7 @@ namespace LuckDraw
             awardText.Text = m_currentAward.Name;
             awardNameText.Text = m_currentAward.AwardProduct;
             awardCountText.Text = m_currentAward.ActualQty + "/" + m_currentAward.PlanQty;
+            wall.Reset();
             GoToState(AppState.ShowAward);
         }
 
@@ -161,6 +160,7 @@ namespace LuckDraw
         {
             if(m_currentState == AppState.ShowAward)
             {
+                LoadCanWinUsers();
                 wall.Roll();
 
                 GoToState(AppState.Gaming);
@@ -200,9 +200,12 @@ namespace LuckDraw
 
                 var cubicCount = wall.CubicCount;
                 var winnerIds = m_candidateIds.RandomGet(cubicCount);
+                var winnerCount = winnerIds.Count();
+                var awardCount = m_currentAward.PlanQty - m_currentAward.ActualQty;
+                
                 for (int i = 0; i < cubicCount; i++)
                 {
-                    if (i < winnerIds.Count())
+                    if (i < Math.Min(awardCount, winnerCount))
                     {
                         UserActionData winner = m_scanUsers.FirstOrDefault(u => u.Id == winnerIds.ElementAt(i));
                         if (winner == null)
@@ -221,40 +224,35 @@ namespace LuckDraw
             }
         }
 
-        int m_tickIndex = 0;
-        private void Tick(object sender, EventArgs e)
-        {
-            if (m_tickIndex >= m_scanUsers.Count)
-                m_tickIndex = 0;
-            SetWinnerImage(m_scanUsers[m_tickIndex]);
-            m_tickIndex++;
-        }
 
         private void SetWinner(int index, UserActionData winner, AwardData award)
         {
-            m_currentAward.ActualQty++;
-            awardCountText.Text = m_currentAward.ActualQty + "/" + m_currentAward.PlanQty;
-            SetWinnerImage(winner);
             wall.PaintWinner(index, new BitmapImage(new Uri(winner.Headimgurl, UriKind.Absolute)), winner.Nickname);
-            Task.Factory.StartNew(() => {
-               var userAwardResult = m_gameService.WinAwardByUser(award.Id.ToString(), winner.Id.ToString()).Result;
-                if (userAwardResult.Data == null)
+            Task.Factory.StartNew<bool>(() =>
+            {
+                var userAwardResult = m_gameService.WinAwardByUser(award.Id.ToString(), winner.Id.ToString()).Result;
+                if (userAwardResult.Data != null)
                 {
-                    Console.WriteLine("WinAwardByUser " + userAwardResult.ErrMessage);
+                    Console.WriteLine("WinAwardByUser" + userAwardResult.Data.Nickname + "win " + userAwardResult.Data.AwardID);
+                    return true;
+                }
+                Console.WriteLine("WinAwardByUser " + userAwardResult.ErrMessage);
+                return false;
+            })
+            .ContinueWith((t) => {
+                bool success = t.Result;
+                if(success)
+                {
+                    m_currentAward.ActualQty++;
+                    awardCountText.Text = m_currentAward.ActualQty + "/" + m_currentAward.PlanQty;
                 }
                 else
                 {
-                    Console.WriteLine("WinAwardByUser" + userAwardResult.Data.Nickname + "win " + userAwardResult.Data.AwardID);
+                    wall.PaintWinner(index, new BitmapImage(new Uri(AppDomain.CurrentDomain.BaseDirectory + "sun.jpg", UriKind.Absolute)), "");
                 }
-            });
+            }, TaskScheduler.FromCurrentSynchronizationContext());
         }
 
-        private void SetWinnerImage(UserInfoData winner)
-        {
-            winnerImage.Source = new BitmapImage(new Uri(winner.Headimgurl, UriKind.Absolute));
-            
-            winnerName.Text = winner.Nickname;
-        }
 
         private void LoadAwardList()
         {
@@ -417,7 +415,7 @@ namespace LuckDraw
                         Dispatcher.BeginInvoke((Action)(() => 
                         {
                             wall.ClearTiles();
-                            m_scanUsers = scanUsers.Where(s => s.IsSigned).ToList();
+                            m_scanUsers = gameUsers.Where(s => s.IsSigned).ToList();
                             usersCountText.Text = m_scanUsers.Count.ToString();
 
                             foreach (var usr in m_scanUsers)
@@ -496,7 +494,6 @@ namespace LuckDraw
         {
             qrcodePanel.Visibility = state == AppState.ScanQrcode ? Visibility.Visible : Visibility.Hidden;
             awardPanel.Visibility = state != AppState.ScanQrcode ? Visibility.Visible : Visibility.Hidden;
-            winnerPanel.Visibility = state == AppState.ShowWinner || state == AppState.Gaming ? Visibility.Visible : Visibility.Hidden;
             m_currentState = state;
             if(m_currentState != AppState.ScanQrcode)
             {
@@ -531,6 +528,17 @@ namespace LuckDraw
              }
             catch (Exception) { }
             return null;
+        }
+
+        public void AddLuckOne()
+        {
+            if(m_currentAward != null)
+            {
+                if(m_currentAward.PlanQty - m_currentAward.ActualQty > wall.CubicCount)
+                {
+                    wall.AddCubic();
+                }
+            }
         }
     }
 

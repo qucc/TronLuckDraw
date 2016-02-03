@@ -48,7 +48,7 @@ namespace LuckDraw
             }
             else if(e.Key == Key.OemPlus)
             {
-                luck.wall.AddCubic();
+                luck.AddLuckOne();
             }
             else if(e.Key == Key.OemMinus)
             {

@@ -35,10 +35,7 @@
             <TextBlock x:Name="awardNameText" Width="130" Height="27" Canvas.Left="27" Canvas.Top="159"  Foreground="White" TextAlignment="Center" FontSize="18" />
             <TextBlock x:Name="awardCountText" Width="130" Height="27" Canvas.Left="27" Canvas.Top="180"  Foreground="White" TextAlignment="Center" FontSize="18"  />
         </Canvas>
-        <Canvas x:Name="winnerPanel" Height="154" Width="192.151" Canvas.Left="29.938" Canvas.Top="361.5">
-            <Image x:Name="winnerImage" Width="130" Height="127" Canvas.Left="31.5" />
-            <TextBlock x:Name="winnerName" Width="200" Height="27" Canvas.Left="-4" Canvas.Top="127" Foreground="White" TextAlignment="Center" FontSize="20" />
-        </Canvas>
+
         <TextBlock FontFamily="/LuckDraw;component/Fonts/#RTWS YueGothic Demo Light" Foreground="White" FontSize="18"  Canvas.Right="30" Canvas.Top="73">
             <Run Text="总人数"/>
             <Run Text="   "/>
