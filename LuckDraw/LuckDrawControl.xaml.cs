@@ -126,7 +126,7 @@ namespace LuckDraw
         {
             if(m_currentState == AppState.ShowAward)
             {
-                m_timer.Start();
+                wall.Roll();
                 LoadCanWinUsers();
                 GoToState(AppState.Gaming);
             }
@@ -135,7 +135,7 @@ namespace LuckDraw
                 if(m_currentAward.PlanQty > m_currentAward.ActualQty )
                 {
                     LoadCanWinUsers();
-                    m_timer.Start();
+                    wall.Roll();
                     GoToState(AppState.Gaming);
                 }
                 else
@@ -145,9 +145,6 @@ namespace LuckDraw
             }
             else if (m_currentState == AppState.Gaming)
             {
-                m_timer.Stop();
-               
-               
                 if(m_candidateIds == null)
                 {
                     MessageBox.Show("debug get GetCanWinUsers 未返回");
@@ -159,12 +156,27 @@ namespace LuckDraw
                     MessageBox.Show("所有用户抽过了");
                     return;
                 }
+                wall.Stop();
 
-                //todo:scanuser less than candidates
-                UserActionData winner = m_scanUsers.FirstOrDefault(u => u.Id == m_candidateIds.RandomGet());
-                if (winner == null)
-                    return;
-                SetWinner(winner, m_currentAward);
+                var cubicCount = wall.CubicCount;
+                var winnerIds = m_candidateIds.RandomGet(cubicCount);
+                for (int i = 0; i < cubicCount; i++)
+                {
+                    if (i < winnerIds.Count())
+                    {
+                        UserActionData winner = m_scanUsers.FirstOrDefault(u => u.Id == winnerIds.ElementAt(i));
+                        if (winner == null)
+                        {
+                            MessageBox.Show("打不到用户");
+                            continue;
+                        }
+                        SetWinner(i, winner, m_currentAward);
+                    }
+                    else
+                    {
+                        wall.PaintWinner(i, new BitmapImage(new Uri(AppDomain.CurrentDomain.BaseDirectory + "sun.jpg", UriKind.Absolute)), "");
+                    }
+                }
                 GoToState(AppState.ShowWinner);
             }
         }
@@ -178,11 +190,12 @@ namespace LuckDraw
             m_tickIndex++;
         }
 
-        private void SetWinner(UserActionData winner, AwardData award)
+        private void SetWinner(int index, UserActionData winner, AwardData award)
         {
             m_currentAward.ActualQty++;
             awardCountText.Text = m_currentAward.ActualQty + "/" + m_currentAward.PlanQty;
             SetWinnerImage(winner);
+            wall.PaintWinner(index, new BitmapImage(new Uri(winner.Headimgurl, UriKind.Absolute)), winner.Nickname);
             Task.Factory.StartNew(() => {
                var userAwardResult = m_gameService.WinAwardByUser(award.Id.ToString(), winner.Id.ToString()).Result;
                 if (userAwardResult.Data == null)
@@ -515,6 +528,22 @@ namespace LuckDraw
             return list.ElementAt(rnd.Next(list.Count()));
         }
 
+        public static IEnumerable<T> RandomGet<T>(this IEnumerable<T> list, int count)
+        {
+            if (list.Count() == 0)
+                yield return default(T);
+            Random rnd = new Random();
+            var indexs = Enumerable.Range(0, list.Count()).ToList();
+            var resultCount = Math.Min(list.Count(), count);
+            for (int i = 0; i < resultCount; i++)
+            {
+                var indexIndex = rnd.Next(indexs.Count);
+                var listIndex = indexs[indexIndex];
+                indexs.RemoveAt(indexIndex);
+                yield return list.ElementAt(listIndex);
+            }
+
+        }
     }
 
 }

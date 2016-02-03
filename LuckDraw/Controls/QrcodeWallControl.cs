@@ -36,6 +36,11 @@ namespace LuckDraw
         private const int MaxCubicCount = 5;
         private int m_cubicCount = 1;
 
+        public int CubicCount
+        {
+            get { return m_cubicCount; }
+        }
+
 
         public QrcodeWallControl()
         {
@@ -80,6 +85,7 @@ namespace LuckDraw
                         {
                             cubic.Speed = 0;
                             cubic.Rotation3D.Angle = 0;
+                            cubic.Nickname.Visibility = Visibility.Visible;
                         }
                         cubic.Rotation3D.Angle = cubic.Rotation3D.Angle + cubic.Speed;
 
@@ -89,11 +95,11 @@ namespace LuckDraw
                         }
                     }
                 }
-                if(m_cubics.All(c =>c.Speed == Cubic.Fast))
+                if (m_cubics.All(c => c.Friction == 0))
                 {
                     PaintCubic();
                 }
-                if(m_cubics.All(c =>c.Speed == 0))
+                if (m_cubics.All(c =>c.Speed == 0))
                 {
                     isRotating = false;
                 }
@@ -271,13 +277,16 @@ namespace LuckDraw
                     TopMaterial = new DiffuseMaterial(),
                     Nickname = new TextBlock
                     {
-                        Text = "Hella你好",
+                        Text = "Tony",
+                        Foreground = Brushes.White,
+                        Background = Brushes.Transparent,
                         TextWrapping = TextWrapping.WrapWithOverflow,
-                        Width = 300,
-                        Foreground = Brushes.Red,
-                        FontFamily = new FontFamily("Arial")
+                        Height  = 50,
+                        Width = 100,
+                        TextAlignment = TextAlignment.Center,
                     }
                 };
+               
             }
 
             for (int i = 0; i < m_cubics.Length; i++)
@@ -286,6 +295,7 @@ namespace LuckDraw
                 var cubicModel3D = BuildCubic(cubic);
                 m_cubicModels.Children.Add(cubicModel3D);
             }
+            PaintCubic();
         }
 
         private Model3DGroup BuildCubic(Cubic cubic)
@@ -363,7 +373,7 @@ namespace LuckDraw
             VisualBrush brush = new VisualBrush(cubic.Nickname);
             brush.Stretch = Stretch.Uniform;
             nickNameModel.Material = new DiffuseMaterial(brush);
-            nickNameModel.Transform = new TranslateTransform3D(-0.5 , -1.3, 0.6);
+            nickNameModel.Transform = new TranslateTransform3D(-0.5 , -1.2, 0.6);
             cubicModel3D.Children.Add(nickNameModel);
 
             RotateTransform3D rotate = new RotateTransform3D(cubic.Rotation3D, new Point3D(0, 0, 0));
@@ -390,28 +400,37 @@ namespace LuckDraw
                 cubic.TopMaterial.Brush = new ImageBrush(m_qrcodes[rnd.Next(m_qrcodes.Count)].HeadImage);
             }
         }
+
+        public void PaintWinner(int index, BitmapSource head, string name)
+        {
+            var cubic = m_cubics[index];
+            cubic.FrontMaterial.Brush = new ImageBrush(head);
+            cubic.Nickname.Text = name;
+        }
         
         public void Roll()
         {
-          
             if (!isRotating)
             {
-                isRotating = true;
+                //isRotating = true;
                 ReloadCubic();
                 foreach(var cubic in m_cubics)
                 {
                     cubic.Start();
                 }
             }
-            else
+        }
+
+        public void Stop()
+        {
+            if (isRotating)
             {
-                foreach(var cubic in m_cubics)
+                foreach (var cubic in m_cubics)
                 {
                     cubic.Stop();
                 }
             }
         }
-
     }
 
 
