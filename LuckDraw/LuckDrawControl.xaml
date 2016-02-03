@@ -52,5 +52,6 @@
             </local:QrcodeWallControl>
         </Border>
         <local:BulletCurtain x:Name="bulletCurtain" />
+        <Image x:Name="bigQrcode" Width="500" Height="500" Source="{Binding ElementName=qrcodeImge, Path=Source}" Canvas.Left="457" Canvas.Top="154" Visibility="Collapsed"/>
     </Canvas>
 </UserControl>

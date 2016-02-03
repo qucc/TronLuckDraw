@@ -3,6 +3,7 @@ using SensngGame.ClientSDK;
 using SensngGame.ClientSDK.Contract;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Configuration;
 using System.IO;
 using System.Linq;
@@ -51,10 +52,13 @@ namespace LuckDraw
             m_timer.Interval = TimeSpan.FromMilliseconds(100);
             m_timer.Tick += Tick;
             bulletCurtain.SetGameServiceClient(m_gameService);
-            LoadQrcode();
-            LoadAwardList();
-            LoadActivityInfo();
-            LoadWhiteListInfo();
+            if (!DesignerProperties.GetIsInDesignMode(this))
+            {
+                LoadQrcode();
+                LoadAwardList();
+                LoadActivityInfo();
+                LoadWhiteListInfo();
+            }
     
         }
 
