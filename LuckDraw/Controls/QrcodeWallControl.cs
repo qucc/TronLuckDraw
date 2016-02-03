@@ -46,33 +46,36 @@ namespace LuckDraw
         {
             Init3DWorld();
             InitWallTiles();
-            foreach (var f in Directory.GetFiles("head"))
-            {
-                m_qrcodes.Add(new Qrcode
-                {
-                    HeadImage = new BitmapImage(new Uri(f, UriKind.Relative))
-                });
-            }
+            //foreach (var f in Directory.GetFiles("head"))
+            //{
+            //    m_qrcodes.Add(new Qrcode
+            //    {
+            //        HeadImage = new BitmapImage(new Uri(f, UriKind.Relative))
+            //    });
+            //}
             PaintFrontWall();
             PaintBackWall();
             CompositionTarget.Rendering += CompositionTarget_Rendering;
         }
 
         private DateTime lastFlipTime = DateTime.Now;
+        private bool canFlip = true;
         private bool isFliping = false;
         private bool isRotating = false;
         private void CompositionTarget_Rendering(object sender, EventArgs e)
         {
-            if(!isFliping && DateTime.Now.Subtract(lastFlipTime).TotalMilliseconds > 2000)
+            if (canFlip)
             {
-                isFliping = true;
-            }
+                if (!isFliping && DateTime.Now.Subtract(lastFlipTime).TotalMilliseconds > 2000)
+                {
+                    isFliping = true;
+                }
 
-            if(isFliping)
-            {
-                FlipTiles();
+                if (isFliping)
+                {
+                    FlipTiles();
+                }
             }
-
             if (isRotating)
             {
                 for (int i = 0; i < m_cubics.Length; i++)
@@ -103,7 +106,6 @@ namespace LuckDraw
                 {
                     isRotating = false;
                 }
-                
             }
         }
 
@@ -201,9 +203,12 @@ namespace LuckDraw
             for (int i = 0; i < m_tiles.Length; i++)
             {
                 var tile = m_tiles[i];
-                Qrcode qrcode = m_qrcodes[rnd.Next(50)];
-                tile.Material.Brush = new ImageBrush(qrcode.HeadImage);
-                
+                if (m_qrcodes.Count > 0)
+                {
+                    Qrcode qrcode = m_qrcodes[rnd.Next(m_qrcodes.Count)];
+                    tile.Material.Brush = new ImageBrush(qrcode.HeadImage);
+                }
+
             }
         }
 
@@ -213,8 +218,11 @@ namespace LuckDraw
             for (int i = 0; i < m_tiles.Length; i++)
             {
                 var tile = m_tiles[i];
-                Qrcode back = m_qrcodes[rnd.Next(50)];
-                tile.BackMateral.Brush = new ImageBrush(back.HeadImage);
+                if (m_qrcodes.Count > 0)
+                {
+                    Qrcode back = m_qrcodes[rnd.Next(m_qrcodes.Count)];
+                    tile.BackMateral.Brush = new ImageBrush(back.HeadImage);
+                }
             }
         }
 
@@ -284,6 +292,7 @@ namespace LuckDraw
                         Height  = 50,
                         Width = 100,
                         TextAlignment = TextAlignment.Center,
+                        Visibility = Visibility.Hidden
                     }
                 };
                
@@ -410,9 +419,14 @@ namespace LuckDraw
         
         public void Roll()
         {
+            if(canFlip)
+            {
+                canFlip = false;
+                m_tileModels.Children.Clear();
+            }
             if (!isRotating)
             {
-                //isRotating = true;
+                isRotating = true;
                 ReloadCubic();
                 foreach(var cubic in m_cubics)
                 {
