@@ -42,6 +42,10 @@ namespace LuckDraw
             {
                 luck.bulletCurtain.Toggle();
             }
+            else if(e.Key == Key.Z)
+            {
+                luck.bigQrcode.Visibility = luck.bigQrcode.Visibility == Visibility.Collapsed ? Visibility.Visible : Visibility.Collapsed;
+            }
             else if(e.Key == Key.OemPlus)
             {
                 luck.wall.AddCubic();

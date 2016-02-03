@@ -24,6 +24,13 @@ namespace LuckDraw
         private int m_lastBulletId = -1;
         private bool m_running = true;
         private Brush[] m_brushes = new Brush[] {Brushes.LightSeaGreen, Brushes.Pink,Brushes.Yellow};
+        private FormattedText m_marqueText = new FormattedText("欢迎使用聊天室弹幕功能",
+                                                CultureInfo.CurrentCulture,
+                                                FlowDirection.LeftToRight,
+                                                new Typeface("Arial"),
+                                                25,
+                                                Brushes.White);
+        private double m_marqueeX = 0;
 
         private GameServiceClient m_gameServiceClient;
         public BulletCurtain()
@@ -53,10 +60,7 @@ namespace LuckDraw
             Source = drawingImage;
             m_curtainRect = new Rect(0, 0, 1280, 720);
             m_bulletCurtain.ClipGeometry = new RectangleGeometry(m_curtainRect);
-
-            //m_bulletTimer.Interval = TimeSpan.FromMilliseconds(100);
-            //m_bulletTimer.Tick += bulletTimer_Tick;
-            //m_bulletTimer.Start();
+            m_marqueeX = m_curtainRect.Width;
         }
 
 
@@ -157,6 +161,9 @@ namespace LuckDraw
                     m_bullets.RemoveAt(i);
                 }
             }
+            m_marqueeX -= 1;
+            if (m_marqueeX < -m_marqueText.Width)
+                m_marqueeX = m_curtainRect.Width;
 
             using (var dc = m_bulletCurtain.Open())
             {
@@ -173,9 +180,9 @@ namespace LuckDraw
                     dc.DrawRoundedRectangle(m_brushes[bullet.BrushIndex], null, new Rect(bullet.X - margin, bullet.Y - margin, formattedText.Width + 2 * margin, formattedText.Height + 2 * margin), 10, 10);
                     dc.Pop();
                     dc.DrawText(formattedText, new Point(bullet.X, bullet.Y));
-               
-                    
                 }
+                                               
+                dc.DrawText(m_marqueText, new Point(m_marqueeX, m_curtainRect.Height - m_marqueText.Height - 10));
             }
 
         }
