@@ -40,7 +40,7 @@
             <Run Text="总人数"/>
             <Run Text="   "/>
             <Run x:Name="usersCountText" Text="0" />
-            <Run Text="/"/>
+            <Run x:Name="totalCountTextSlash" Text="/" />
             <Run x:Name="totalCountText" Text="0"/>
             <Run Text="人" />
         </TextBlock>

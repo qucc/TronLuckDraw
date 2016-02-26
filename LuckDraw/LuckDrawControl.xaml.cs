@@ -33,6 +33,7 @@ namespace LuckDraw
         private GameServiceClient m_gameService;
         private int m_lastUserCount = 0;
         private bool m_longPulling = false;
+        private bool m_isEnableWhiteList;
 
         private List<UserActionData> m_scanUsers = null;
         private List<AwardData> m_awards = null;
@@ -86,6 +87,11 @@ namespace LuckDraw
                     return;
                 }
                 totalCountText.Text = list.Count.ToString();
+                if (!m_isEnableWhiteList)
+                {
+                    totalCountTextSlash.Text = "";
+                    totalCountText.Text = "";
+                }
 
             }, TaskScheduler.FromCurrentSynchronizationContext());
         }
@@ -123,6 +129,12 @@ namespace LuckDraw
                     MessageBox.Show("活动已结束");
                 }
                 titleTxt.Text = activityData.Name + "微信签到墙";
+                m_isEnableWhiteList = activityData.IsEnableWhiteUser;
+                if(!m_isEnableWhiteList)
+                {
+                    totalCountTextSlash.Text = "";
+                    totalCountText.Text = "";
+                }
             }, TaskScheduler.FromCurrentSynchronizationContext());
         }
 
