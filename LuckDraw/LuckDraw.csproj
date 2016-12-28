@@ -49,7 +49,7 @@
     </Reference>
     <Reference Include="SensngGame.ClientSDK, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>Libs\SensngGame.ClientSDK.dll</HintPath>
+      <HintPath>bin\Debug\SensngGame.ClientSDK.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.configuration" />
@@ -74,7 +74,16 @@
     </ApplicationDefinition>
     <Compile Include="Controls\BulletCurtain.cs" />
     <Compile Include="Controls\Tile.cs" />
+    <Compile Include="Controls\UserChatMsgControl.xaml.cs">
+      <DependentUpon>UserChatMsgControl.xaml</DependentUpon>
+    </Compile>
     <Compile Include="QrcodeTile.cs" />
+    <Compile Include="ResourceLoader.cs" />
+    <Compile Include="Setting.cs" />
+    <Page Include="Controls\UserChatMsgControl.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="LuckDrawControl.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
@@ -142,9 +151,6 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Include="Libs\Newtonsoft.Json.dll">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Include="Libs\SensngGame.ClientSDK.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>

@@ -32,31 +32,41 @@ namespace LuckDraw
             base.OnKeyDown(e);
             if(e.Key >= Key.D0 && e.Key <= Key.D9)
             {
+                //显示奖品
                 luck.ShowAward(e.Key - Key.D0);
             }
             else if(e.Key == Key.Enter)
             {
+                //开始
                 luck.Begin();
             }
             else if(e.Key == Key.F1)
             {
+                //弹幕
                 luck.bulletCurtain.Toggle();
             }
             else if(e.Key == Key.Z)
             {
+                //显示大二维码
                 luck.bigQrcode.Visibility = luck.bigQrcode.Visibility == Visibility.Collapsed ? Visibility.Visible : Visibility.Collapsed;
             }
             else if(e.Key == Key.OemPlus)
             {
+                //"+"中奖人数
                 luck.AddLuckOne();
             }
             else if(e.Key == Key.OemMinus)
             {
+                //"-"中奖人数
                 luck.wall.RemoveCubic();
             }
             else if(e.Key == Key.R)
             {
                 luck.wall.Roll();
+            } if(e.Key == Key.F5)
+            {
+                //刷新
+                luck.Reset();
             }
         }
 

@@ -1,0 +1,22 @@
+﻿<UserControl x:Class="LuckDraw.Controls.UserChatMsgControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:LuckDraw.Controls"
+             mc:Ignorable="d" 
+             d:DesignHeight="300" d:DesignWidth="300">
+    <WrapPanel VerticalAlignment="Center" >
+        <Border CornerRadius="10" Width="50" BorderBrush="Black" BorderThickness="1">
+            <Border.Background>
+                <ImageBrush>
+                    <ImageBrush.ImageSource>
+                        <BitmapImage x:Name="Avator" UriSource="/Images/Background.png"></BitmapImage>
+                    </ImageBrush.ImageSource>
+                </ImageBrush>
+            </Border.Background>
+            
+        </Border>
+        <Label x:Name="Message" VerticalAlignment="Center">大家好，我是吴礼旭</Label>
+    </WrapPanel>
+</UserControl>

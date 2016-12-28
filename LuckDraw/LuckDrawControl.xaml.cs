@@ -42,23 +42,36 @@ namespace LuckDraw
         private AwardData m_currentAward = null;
         private List<int> m_candidateIds = null;
         private Random m_rnd = new Random();
-        private readonly string Activity_ID = ConfigurationManager.AppSettings["ActivityId"].ToString();
-        private readonly string Weixin_ID = ConfigurationManager.AppSettings["WeixinId"].ToString();
+        private readonly string SubKey = ConfigurationManager.AppSettings["SubKey"].ToString();
+        private readonly bool NeedSign = ConfigurationManager.AppSettings["NeedSign"] == "true";
 
         public LuckDrawControl()
         {
             InitializeComponent();
-            m_gameService = new GameServiceClient("j;lajdf;jaiuefjf", Weixin_ID, "19", Activity_ID);
+            m_gameService = new GameServiceClient(SubKey, Setting.GameNo);
         
             bulletCurtain.SetGameServiceClient(m_gameService);
             if (!DesignerProperties.GetIsInDesignMode(this))
             {
+                Restart();
+            }
+    
+        }
+
+        public void Restart()
+        {
             LoadQrcode();
             LoadAwardList();
             LoadActivityInfo();
-                LoadWhiteListInfo();
-            }
-    
+            LoadWhiteListInfo();
+        }
+
+        public void Reset()
+        {
+            m_awards = null;
+            LoadAwardList();
+            wall.Reset();
+            m_currentState = AppState.ScanQrcode;
         }
 
         private void LoadWhiteListInfo()
@@ -86,7 +99,8 @@ namespace LuckDraw
                     MessageBox.Show("加载白名单失败");
                     return;
                 }
-                totalCountText.Text = list.Count.ToString();
+                //todo: 白名单不等于总人数.
+                totalCountText.Text = "开放扫码";
                 if (!m_isEnableWhiteList)
                 {
                     totalCountTextSlash.Text = "";
@@ -107,7 +121,7 @@ namespace LuckDraw
                     if (activityResult.Data != null)
                         return activityResult.Data;
                     else
-                        log.Error(activityResult.ErrMessage);
+                        log.Error(activityResult.Message);
                 }
                 return null;
             });
@@ -164,7 +178,6 @@ namespace LuckDraw
             awardText.Text = m_currentAward.Name;
             awardNameText.Text = m_currentAward.AwardProduct;
             awardCountText.Text = m_currentAward.ActualQty + "/" + m_currentAward.PlanQty;
-            wall.Reset();
             GoToState(AppState.ShowAward);
         }
 
@@ -199,13 +212,13 @@ namespace LuckDraw
             {
                 if(m_candidateIds == null)
                 {
-                    MessageBox.Show("debug get GetCanWinUsers 未返回");
+                    MessageBox.Show("没有可中奖的用户");
                     return;
                 }
                 
                 if(m_candidateIds.Count() == 0)
                 {
-                    MessageBox.Show("所有用户抽过了");
+                    MessageBox.Show("所有用户抽过奖了!");
                     return;
                 }
                 wall.Stop();
@@ -222,14 +235,14 @@ namespace LuckDraw
                         UserActionData winner = m_scanUsers.FirstOrDefault(u => u.Id == winnerIds.ElementAt(i));
                         if (winner == null)
                         {
-                            MessageBox.Show("打不到用户");
+                            MessageBox.Show("找不到能中奖用户");
                             continue;
                         }
                         SetWinner(i, winner, m_currentAward);
                     }
                     else
                     {
-                        wall.PaintWinner(i, new BitmapImage(new Uri(AppDomain.CurrentDomain.BaseDirectory + "sun.jpg", UriKind.Absolute)), "");
+                        wall.PaintWinner(i, new BitmapImage(new Uri(AppDomain.CurrentDomain.BaseDirectory + "noperson.png", UriKind.Absolute)), "");
                     }
                 }
                 GoToState(AppState.ShowWinner);
@@ -243,12 +256,12 @@ namespace LuckDraw
             Task.Factory.StartNew<bool>(() =>
             {
                 var userAwardResult = m_gameService.WinAwardByUser(award.Id.ToString(), winner.Id.ToString()).Result;
-                if (userAwardResult.Data != null)
+                if (userAwardResult != null && userAwardResult.Data != null)
                 {
+
                     Console.WriteLine("WinAwardByUser" + userAwardResult.Data.Nickname + "win " + userAwardResult.Data.AwardID);
                     return true;
                 }
-                Console.WriteLine("WinAwardByUser " + userAwardResult.ErrMessage);
                 return false;
             })
             .ContinueWith((t) => {
@@ -260,7 +273,7 @@ namespace LuckDraw
                 }
                 else
                 {
-                    wall.PaintWinner(index, new BitmapImage(new Uri(AppDomain.CurrentDomain.BaseDirectory + "sun.jpg", UriKind.Absolute)), "");
+                    wall.PaintWinner(index, new BitmapImage(new Uri(AppDomain.CurrentDomain.BaseDirectory + "noperson.png", UriKind.Absolute)), "");
                 }
             }, TaskScheduler.FromCurrentSynchronizationContext());
         }
@@ -280,7 +293,7 @@ namespace LuckDraw
                         continue;
                     if(awardsResult.Data == null)
                     {
-                        log.Error("GetAwardsByActivity" + awardsResult.ErrMessage);
+                        log.Error("GetAwardsByActivity" + awardsResult.Message);
                         continue;
                     }
                     var appRoot = AppDomain.CurrentDomain.BaseDirectory;
@@ -294,7 +307,11 @@ namespace LuckDraw
                             log.Error("奖品图片为空");
                             continue;
                         }
-                        award.AwardImagePath = GameServiceClient.ServerBase + award.AwardImagePath;
+                        if (!award.AwardImagePath.Contains("http://"))
+                        {
+                            award.AwardImagePath = GameServiceClient.ServerBase + award.AwardImagePath;
+                        }
+
                         var dest = awardDir + award.AwardImagePath.GetHashCode() + ".png";
                         if (File.Exists(dest))
                         {
@@ -339,7 +356,7 @@ namespace LuckDraw
                         continue;
                     if(qrCodeResult.Data == null)
                     {
-                        log.Error("GetQrCode4LoginAsync " + qrCodeResult.ErrMessage + " " + qrCodeResult.Status);
+                        log.Error("GetQrCode4LoginAsync " + qrCodeResult.Message + " " + qrCodeResult.Status);
                         continue;
                     }
                     var filename = "qrcode.jpg";
@@ -347,7 +364,7 @@ namespace LuckDraw
                     if (!success)
                         continue;
                     qrCodeResult.Data.QrCodeUrl = filename;
-                    SaveQrcode(new CheckInQrcode { FileName = filename, QrcodeId = qrCodeResult.Data.QrCodeId, ActivityId = Activity_ID});
+                    SaveQrcode(new CheckInQrcode { FileName = filename, QrcodeId = qrCodeResult.Data.QrCodeId });
                     return qrCodeResult.Data;
                     
                 }
@@ -381,7 +398,7 @@ namespace LuckDraw
                     if (userActionResult == null)
                         continue;
 #if DEBUG
-                    Console.WriteLine("FindScanQrCodeUsersAsync " + userActionResult.ErrMessage);
+                    Console.WriteLine("FindScanQrCodeUsersAsync " + userActionResult.Message);
 
 #endif
                     if (userActionResult.Data == null)
@@ -389,8 +406,8 @@ namespace LuckDraw
                         continue;
                     }
                     var gameUsers = userActionResult.Data;
-
-                    if (gameUsers.Where(s => s.IsSigned).Count() != m_lastUserCount)
+                    var count = NeedSign ? gameUsers.Where(s => s.IsSigned).Count() : gameUsers.Count();
+                    if (count != m_lastUserCount)
                     {
                         WebClient webClient = new WebClient();
                         var appRoot = AppDomain.CurrentDomain.BaseDirectory;
@@ -423,11 +440,11 @@ namespace LuckDraw
                             }
                         }
 
-                        m_lastUserCount = gameUsers.Where(s => s.IsSigned).Count();
+                        m_lastUserCount = count;
                         Dispatcher.BeginInvoke((Action)(() => 
                         {
                             wall.ClearTiles();
-                            m_scanUsers = gameUsers.Where(s => s.IsSigned).ToList();
+                            m_scanUsers = NeedSign?gameUsers.Where(s => s.IsSigned).ToList(): gameUsers.ToList();
                             usersCountText.Text = m_scanUsers.Count.ToString();
 
                             foreach (var usr in m_scanUsers)
@@ -440,6 +457,8 @@ namespace LuckDraw
 
             });
         }
+
+
 
         private void LoadCanWinUsers()
         {
@@ -529,10 +548,6 @@ namespace LuckDraw
             try {
 
                 CheckInQrcode q = JsonConvert.DeserializeObject<CheckInQrcode>(File.ReadAllText(appRoot + "qrcode.json"));
-                if(q.ActivityId != Activity_ID)
-                {
-                    return null;
-                }
                 if(File.Exists(appRoot + q.FileName))
                 {
                     return q;

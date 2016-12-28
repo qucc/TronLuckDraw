@@ -31,13 +31,13 @@
         </Canvas>
         <Canvas x:Name="awardPanel" Height="154" Width="192.151" Canvas.Left="37.787" Canvas.Top="153.953">
             <Image x:Name="awardImage" Width="130" Height="127" Canvas.Left="27" />
-            <TextBlock x:Name="awardText"  Width="130" Height="27" Canvas.Left="27" Canvas.Top="127"  Foreground="White" TextAlignment="Center" FontSize="25" FontWeight="Bold" />
-            <TextBlock x:Name="awardNameText" Width="130" Height="27" Canvas.Left="27" Canvas.Top="159"  Foreground="White" TextAlignment="Center" FontSize="18" />
-            <TextBlock x:Name="awardCountText" Width="130" Height="27" Canvas.Left="27" Canvas.Top="180"  Foreground="White" TextAlignment="Center" FontSize="18"  />
+            <TextBlock x:Name="awardText"  Width="130" Height="27" Canvas.Left="27" Canvas.Top="130"  Foreground="White" TextAlignment="Center" FontSize="25" FontWeight="Bold" />
+            <TextBlock x:Name="awardNameText" Width="130" Height="27" Canvas.Left="27" Canvas.Top="162"  Foreground="White" TextAlignment="Center" FontSize="18" />
+            <TextBlock x:Name="awardCountText" Width="130" Height="27" Canvas.Left="27" Canvas.Top="185"  Foreground="White" TextAlignment="Center" FontSize="18"  />
         </Canvas>
 
-        <TextBlock FontFamily="/LuckDraw;component/Fonts/#RTWS YueGothic Demo Light" Foreground="White" FontSize="18"  Canvas.Right="30" Canvas.Top="73">
-            <Run Text="总人数"/>
+        <TextBlock FontFamily="/LuckDraw;component/Fonts/#RTWS YueGothic Demo Light" Foreground="White" FontSize="18"  Canvas.Right="30" Canvas.Top="105" Canvas.Left="1048">
+            <Run Text="当前人数"/>
             <Run Text="   "/>
             <Run x:Name="usersCountText" Text="0" />
             <Run x:Name="totalCountTextSlash" Text="/" />

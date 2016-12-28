@@ -395,7 +395,7 @@ namespace LuckDraw
             VisualBrush brush = new VisualBrush(cubic.Nickname);
             brush.Stretch = Stretch.Uniform;
             nickNameModel.Material = new DiffuseMaterial(brush);
-            nickNameModel.Transform = new TranslateTransform3D(-0.5 , -1.2, 0.6);
+            nickNameModel.Transform = new TranslateTransform3D(-0.45 , -1.3, 0.6);
             cubicModel3D.Children.Add(nickNameModel);
 
             RotateTransform3D rotate = new RotateTransform3D(cubic.Rotation3D, new Point3D(0, 0, 0));

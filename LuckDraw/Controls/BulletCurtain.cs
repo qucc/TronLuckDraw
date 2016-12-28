@@ -1,15 +1,19 @@
-﻿using SensngGame.ClientSDK;
+﻿using SensingPlatform.Foundation.ResourceManager;
+using SensngGame.ClientSDK;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
 using System.Linq;
+using System.Net.Cache;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 
 namespace LuckDraw
@@ -78,19 +82,27 @@ namespace LuckDraw
                 {
 
                     var chatMessageResult = m_gameServiceClient.GetChartMessage(5).Result;
-                    if(chatMessageResult.Data != null)
+                    if(chatMessageResult != null && chatMessageResult.Data != null)
                     {
                         List<Bullet> bullets = new List<Bullet>();
                         foreach(var chat in chatMessageResult.Data)
                         {
+                            string headpng = "nohead.png";
+                            if (chat.OwnerUrl != null)
+                            {
+                                headpng =  "head/" + chat.OwnerUrl.GetHashCode() + ".jpg";
+                            }
+                            
                             bullets.Add(new Bullet
                             {
                                 Id = chat.Id,
                                 Text = chat.Message,
-                                X = (int)m_curtainRect.Width + rnd.Next(50,100),
+                                X = (int)m_curtainRect.Width + rnd.Next(50, 100),
                                 Y = rnd.Next(10, 600),
-                                Speed = rnd.Next(2, 5),
-                                BrushIndex = rnd.Next(m_brushes.Length)
+                                Speed = 2,
+                                BrushIndex = rnd.Next(m_brushes.Length),
+
+                                OwnerHeadingUrl = Path.Combine(Environment.CurrentDirectory, headpng) //chat.OwnerUrl
                             });
                         }
                         Dispatcher.BeginInvoke(new NewBulletDelegate(NewBullets), bullets);
@@ -177,9 +189,12 @@ namespace LuckDraw
                                         Brushes.White);
                     var margin = 10;
                     dc.PushOpacity(0.6);
-                    dc.DrawRoundedRectangle(m_brushes[bullet.BrushIndex], null, new Rect(bullet.X - margin, bullet.Y - margin, formattedText.Width + 2 * margin, formattedText.Height + 2 * margin), 10, 10);
+                    dc.DrawRoundedRectangle(m_brushes[bullet.BrushIndex], null, new Rect(bullet.X - margin, bullet.Y - margin, formattedText.Width + formattedText.Height + 4 * margin, formattedText.Height + 2 * margin), 10, 10);
+                    
+                    
                     dc.Pop();
-                    dc.DrawText(formattedText, new Point(bullet.X, bullet.Y));
+                    dc.DrawImage(new BitmapImage(new Uri(bullet.OwnerHeadingUrl)), new Rect(bullet.X, bullet.Y, formattedText.Height, formattedText.Height));
+                    dc.DrawText(formattedText, new Point(bullet.X + formattedText.Height + margin, bullet.Y));
                 }
                                                
                 dc.DrawText(m_marqueText, new Point(m_marqueeX, m_curtainRect.Height - m_marqueText.Height - 10));
@@ -190,11 +205,13 @@ namespace LuckDraw
         class Bullet
         {
             public int Id { get; set; }
-            public int X { get; set; }
-            public int Y { get; set; }
-            public int Speed { get; set; }
+            public double X { get; set; }
+            public double Y { get; set; }
+            public double Speed { get; set; }
             public string Text { get; set; }
             public int BrushIndex { get; set; }
+
+            public string OwnerHeadingUrl { get; set; }
 
         }
 
