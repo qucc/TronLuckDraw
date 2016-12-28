@@ -71,7 +71,7 @@ namespace LuckDraw
             m_awards = null;
             LoadAwardList();
             wall.Reset();
-            m_currentState = AppState.ScanQrcode;
+            GoToState(AppState.ScanQrcode);
         }
 
         private void LoadWhiteListInfo()
@@ -391,9 +391,12 @@ namespace LuckDraw
                     MessageBox.Show("获取二维码失败");
                 }
                 m_longPulling = true;
-                while(m_longPulling)
+                while(true)
                 {
                     Thread.Sleep(1000);
+                    if (!m_longPulling)
+                        continue;
+
                     var userActionResult = m_gameService.GetUsersByActivityAndGame(1000).Result;
                     if (userActionResult == null)
                         continue;
@@ -526,10 +529,8 @@ namespace LuckDraw
             qrcodePanel.Visibility = state == AppState.ScanQrcode ? Visibility.Visible : Visibility.Hidden;
             awardPanel.Visibility = state != AppState.ScanQrcode ? Visibility.Visible : Visibility.Hidden;
             m_currentState = state;
-            if(m_currentState != AppState.ScanQrcode)
-            {
-                m_longPulling = false;
-            }
+            m_longPulling = m_currentState == AppState.ScanQrcode;
+            
         }
 
         private void SaveQrcode(CheckInQrcode q)
